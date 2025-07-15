@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000" # Map host port 5000 → container port 5000
+    volumes:
+      - ./app:/app/app
+      - ./templates:/app/templates
+      - ./static:/app/static
+      - ./data:/app/data
+    environment:
+      - FLASK_APP=app
+      - FLASK_ENV=development
+    depends_on:
+      - db
+    restart: unless-stopped # Automatic restart policy
+
+  db:
+    image: postgres:13-alpine # Lightweight PostgreSQL image
+    environment:
+      POSTGRES_USER: admin # DB username
+      POSTGRES_PASSWORD: admin #DB password
+      POSTGRES_DB: flaskdb # Default database name
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

@@ -1,0 +1,36 @@
+body {
+    min-height: 100vh;
+}
+
+.navbar {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, .1);
+}
+
+.card {
+    border: none;
+    border-radius: 0.5rem;
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.form-label {
+    font-weight: 500;
+}
+
+.results {
+    margin-top: 2rem;
+}
+
+.card-footer {
+    border-top: none;
+}
+
+.img-fluid {
+    border-radius: 0.5rem;
+}
+
+.form-select {
+    margin-bottom: 15px;
+}

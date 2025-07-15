@@ -1,0 +1,20 @@
+# Web Framework & Server
+flask==2.3.2          # Core web framework
+gunicorn==21.2.0      # Production WSGI server
+
+# Scientific Computing
+numpy==1.24.4         # Array operations (pandas dependency)
+pandas==2.0.3         # Data manipulation (consider if needed)
+scipy==1.11.1         # Advanced math operations
+
+# Data Visualization
+matplotlib==3.7.2     # Plotting 
+
+# Machine Learning
+scikit-learn==1.3.0   # Only include if doing ML tasks
+
+# Database
+psycopg2-binary==2.9.7 # PostgreSQL adapter (for production use psycopg2)
+
+# Financial Data
+yfinance==0.2.31      # Add version pinning
