@@ -1,0 +1,52 @@
+## Setup for Development
+
+
+1. Pull and create new container from docker image python:3.9-slim
+
+```
+docker run --name portfolioAppDevelopment -it python:3.9-slim  /bin/bash
+```
+
+\[Optional\]: Install fish and set as default
+
+```
+apt-get install fish
+chsh -s /usr/bin/fish
+```
+
+2. Install Dependencies
+
+```
+apt-get update && apt-get install -y --no-install-recommends gcc python3-dev
+```
+
+3. Clone Project
+
+```
+git clone https://[username]:[token]@github.com/oscarseah/portfolioApp
+cd portfolioApp
+```
+
+4. Install Python Dependencies
+
+```
+pip install --no-cache-dir -r requirements.txt
+```
+
+5. Setup Flask Environments
+
+bash:
+```
+export FLASK_APP=app FLASK_ENV=development
+```
+
+fish:
+```
+set FLASK_APP app && set FLASK_ENV development
+```
+
+6. Start Flask Server
+
+```
+flask run --port:[portNumber]
+```
