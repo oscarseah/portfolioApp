@@ -37,16 +37,17 @@ pip install --no-cache-dir -r requirements.txt
 
 bash:
 ```
-export FLASK_APP=app FLASK_ENV=development
+export FLASK_APP=app FLASK_DEBUG=1
 ```
 
 fish:
 ```
-set FLASK_APP app && set FLASK_ENV development
+set -x FLASK_APP app
+set -x FLASK_DEBUG 1
 ```
 
 6. Start Flask Server
 
 ```
-flask run --port:[portNumber]
+flask run --port=[portNumber]
 ```
