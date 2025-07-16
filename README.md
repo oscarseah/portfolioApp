@@ -7,6 +7,14 @@
 docker run --name portfolioAppDevelopment -it python:3.9-slim  /bin/bash
 ```
 
+2. Update apt and install sudo and git
+
+```
+apt-get update 
+apt-get install sudo
+sudo apt install git
+```
+
 \[Optional\]: Install fish and set as default
 
 ```
@@ -17,7 +25,7 @@ chsh -s /usr/bin/fish
 2. Install Dependencies
 
 ```
-apt-get update && apt-get install -y --no-install-recommends gcc python3-dev
+apt-get install -y --no-install-recommends python3-dev
 ```
 
 3. Clone Project
