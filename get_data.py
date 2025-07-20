@@ -1,87 +1,58 @@
-import yfinance as yf
-import numpy as np
 import pandas as pd
-from datetime import datetime
+import numpy as np
 
-# List of Bursa Malaysia tickers
-tickers = [
-    "1015.KL", # AMMB Holdings Berhad
-    "1023.KL", # CIMB Group Holdings Berhad
-    "1066.KL",  # RHB Malaysia
-    "1155.KL",  # Maybank
-    "1295.KL",  # Public Bank
-    "2089.KL", # United Plantations Berhad
-    "4197.KL", # Sime Darby Berhad
-    "4863.KL", # Telekom Malaysia Berhad
-    "5024.KL", # Hup Seng
-    "5211.KL", # Sunway Berhad
-    "5347.KL",  # Tenaga Nasional
-    "5398.KL", # Gamuda Berhad
-    "6012.KL", # Maxis Berhad
-    "6033.KL",   # Petronas Malaysia
-    "6947.KL", # CelcomDigi Berhad
-]
+# Load and process data
+file_path = 'malaysia stock price 3Y.xlsx'
 
-def process_stock(ticker):
-    try:
-        print(f"\nProcessing {ticker}...")
+try:
+    # Read Excel file with single header row
+    df = pd.read_excel(file_path, sheet_name='Sheet1', header=0)
+    
+    # Set date column as index and convert to datetime
+    df = df.rename(columns={'Exchange Date': 'Date'})
+    df['Date'] = pd.to_datetime(df['Date'])
+    df = df.set_index('Date').sort_index()
+    
+    # Initialize results storage
+    results = []
+    
+    # Process each stock
+    for stock in df.columns:
+        series = df[stock].dropna()
         
-        # Set date range (3 years back from current date)
-        end_date = datetime(2025, 4, 4)  # Your current date
-        start_date = end_date - pd.DateOffset(years=3)
+        # Resample to semi-annual periods (end of June/December)
+        semi_annual = series.resample('6M').last()
         
-        # Download data with Close prices
-        data = yf.download(
-            ticker,
-            start=start_date,
-            end=end_date,
-            interval="1mo",
-            progress=False
-        )
-        
-        # Check if data exists
-        if data.empty:
-            print(f"No data found for {ticker}")
-            return
+        if len(semi_annual) < 2:
+            continue  # Skip stocks with insufficient data
             
-        # Verify Close price exists
-        if 'Close' not in data.columns:
-            print(f"Missing Close price for {ticker}")
-            return
+        # Calculate period-to-period returns
+        returns = semi_annual.pct_change().dropna()
+        
+        if len(returns) == 0:
+            continue
             
-        # Calculate monthly returns using Close price
-        data['Monthly Return'] = data['Close'].pct_change()
-        data = data.dropna()
+        # Calculate metrics
+        avg_return = returns.mean()
+        risk = returns.std()
         
-        # Check sufficient data
-        if len(data) < 6:
-            print(f"Insufficient data points ({len(data)}) for {ticker}")
-            return
-            
-        # Calculate annualized metrics
-        annual_return = data['Monthly Return'].mean() * 12
-        annual_risk = data['Monthly Return'].std() * np.sqrt(12)
-        
-        # Save results
-        data[['Close', 'Monthly Return']].to_csv(f"data/individual/{ticker}_historical.csv")
-        pd.DataFrame({
-            'Ticker': [ticker],
-            'Start Date': [data.index[0].strftime('%Y-%m-%d')],
-            'End Date': [data.index[-1].strftime('%Y-%m-%d')],
-            'Annual Return': [annual_return],
-            'Annual Risk': [annual_risk],
-            'Data Points': [len(data)]
-        }).to_csv(f"data/individual/{ticker}_metrics.csv", index=False)
-        
-        print(f"Success: Processed {ticker} with {len(data)} months data")
-        print(f"First date: {data.index[0].date()}")
-        print(f"Last date: {data.index[-1].date()}")
+        results.append({
+            'Stock': stock,
+            'Semi-Annual Return': avg_return,
+            'Semi-Annual Risk': risk
+        })
+    
+    # Create results DataFrame
+    results_df = pd.DataFrame(results)
+    
+    # Save to Excel
+    output_file = 'stock_returns_risk.xlsx'
+    results_df.to_excel(output_file, index=False)
+    
+    print(f"Success! Results saved to '{output_file}'")
+    print(f"\nSample results:")
+    print(results_df.head())
 
-    except Exception as e:
-        print(f"Error processing {ticker}: {str(e)}")
-
-# Process all tickers
-for ticker in tickers:
-    process_stock(ticker)
-
-print("\nProcessing complete!")
+except Exception as e:
+    print(f"Error: {str(e)}")
+    print("Make sure the input file exists and has the correct format")
