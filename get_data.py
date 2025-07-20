@@ -5,10 +5,10 @@ import numpy as np
 file_path = 'malaysia stock price 3Y.xlsx'
 
 try:
-    # Read Excel file with single header row
+    # Read Excel file
     df = pd.read_excel(file_path, sheet_name='Sheet1', header=0)
     
-    # Set date column as index and convert to datetime
+    # Set date column as index
     df = df.rename(columns={'Exchange Date': 'Date'})
     df['Date'] = pd.to_datetime(df['Date'])
     df = df.set_index('Date').sort_index()
@@ -19,20 +19,16 @@ try:
     # Process each stock
     for stock in df.columns:
         series = df[stock].dropna()
-        
-        # Resample to semi-annual periods (end of June/December)
-        semi_annual = series.resample('6M').last()
+        semi_annual = series.resample('6M').last()  # Semi-annual resampling
         
         if len(semi_annual) < 2:
-            continue  # Skip stocks with insufficient data
+            continue  # Skip insufficient data
             
-        # Calculate period-to-period returns
         returns = semi_annual.pct_change().dropna()
         
         if len(returns) == 0:
             continue
             
-        # Calculate metrics
         avg_return = returns.mean()
         risk = returns.std()
         
@@ -45,13 +41,17 @@ try:
     # Create results DataFrame
     results_df = pd.DataFrame(results)
     
+    # 🔑 KEY MODIFICATION: Round to 4 decimal places
+    results_df['Semi-Annual Return'] = results_df['Semi-Annual Return'].round(4)
+    results_df['Semi-Annual Risk'] = results_df['Semi-Annual Risk'].round(4)
+    
     # Save to Excel
     output_file = 'stock_returns_risk.xlsx'
     results_df.to_excel(output_file, index=False)
     
     print(f"Success! Results saved to '{output_file}'")
-    print(f"\nSample results:")
-    print(results_df.head())
+    print("\nSample results (4 decimal places):")
+    print(results_df.head().to_string(float_format='{:,.4f}'.format))  # 👉 Display 4 decimals
 
 except Exception as e:
     print(f"Error: {str(e)}")
