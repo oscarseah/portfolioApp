@@ -51,7 +51,7 @@ try:
     
     print(f"Success! Results saved to '{output_file}'")
     print("\nSample results (4 decimal places):")
-    print(results_df.head().to_string(float_format='{:,.4f}'.format))  # 👉 Display 4 decimals
+    print(results_df.head().to_string(float_format='{:,.4f}'.format))  #  Display 4 decimals
 
 except Exception as e:
     print(f"Error: {str(e)}")
