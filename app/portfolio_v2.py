@@ -118,7 +118,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Runtime error: {str(e)}")
 
-# Portfolio optimization functions
+# Add these optimization functions at the bottom of portfolio.py
 def calculate_efficient_frontier(stocks_df):
     """Calculate efficient frontier portfolios from filtered stocks DataFrame"""
     try:
@@ -158,26 +158,24 @@ def calculate_efficient_frontier(stocks_df):
 
         # Optimize for each target return
         for target in target_returns:
-            # Create a copy of constraints to avoid mutation issues
-            current_constraints = constraints.copy()
-            current_constraints.append({'type': 'eq', 'fun': lambda x, t=target: portfolio_return(x) - t})
+            constraints.append({'type': 'eq', 'fun': lambda x, t=target: portfolio_return(x) - t})
             
             result = minimize(
                 portfolio_risk,
                 x0=np.ones(n_stocks)/n_stocks,
                 method='SLSQP',
                 bounds=bounds,
-                constraints=current_constraints
+                constraints=constraints
             )
             
             if result.success:
                 efficient_portfolios.append({
                     'return': portfolio_return(result.x),
                     'risk': portfolio_risk(result.x),
-                    'weights': result.x,
-                    'target_return': target
+                    'weights': result.x
                 })
-        
+            constraints.pop()  # Remove temporary constraint
+
         # Sort portfolios by risk
         efficient_portfolios.sort(key=lambda x: x['risk'])
 
@@ -185,93 +183,6 @@ def calculate_efficient_frontier(stocks_df):
 
     except Exception as e:
         print(f"Efficient Frontier error: {str(e)}")
-        return []
-
-def refine_efficient_frontier(efficient_portfolios, stocks_df, learning_rate=0.01, max_iter=1000, tolerance=1e-6):
-    """Refine efficient frontier portfolios using steepest descent"""
-    try:
-        # Input validation
-        if not efficient_portfolios:
-            raise ValueError("Efficient frontier is empty")
-            
-        # Extract parameters from stock data
-        expected_returns = stocks_df['return'].values
-        risks = stocks_df['risk'].values
-        stock_names = stocks_df['Stock'].values
-        
-        # Construct covariance matrix
-        correlation = 0.65
-        cov_matrix = np.outer(risks, risks) * correlation
-        np.fill_diagonal(cov_matrix, risks**2)
-        
-        # Storage for refined portfolios
-        refined_portfolios = []
-        
-        for portfolio in efficient_portfolios:
-            # Get original weights and target return
-            weights = portfolio['weights'].copy()
-            target_return = portfolio['target_return']
-            
-            # Define objective and gradient with return constraint
-            def objective(w):
-                return np.sqrt(w.T @ cov_matrix @ w)
-                
-            def gradient(w):
-                port_risk = objective(w)
-                if port_risk < 1e-10:
-                    return np.zeros_like(w)
-                return (cov_matrix @ w) / port_risk
-                
-            def return_constraint(w):
-                return np.dot(w, expected_returns) - target_return
-                
-            # Gradient descent with return constraint
-            prev_risk = objective(weights)
-            for _ in range(max_iter):
-                # Compute gradient
-                grad = gradient(weights)
-                
-                # Update weights
-                new_weights = weights - learning_rate * grad
-                
-                # Project onto constraints
-                new_weights = np.clip(new_weights, 0.01, 0.9)
-                new_weights /= new_weights.sum()
-                
-                # Adjust to maintain target return
-                if abs(return_constraint(new_weights)) > 0.001:
-                    # Simple projection to maintain return
-                    current_return = np.dot(new_weights, expected_returns)
-                    adjustment = target_return - current_return
-                    return_diffs = expected_returns - np.mean(expected_returns)
-                    new_weights += adjustment * return_diffs / (return_diffs @ return_diffs)
-                    new_weights = np.clip(new_weights, 0.01, 0.9)
-                    new_weights /= new_weights.sum()
-                
-                # Check convergence
-                current_risk = objective(new_weights)
-                if abs(prev_risk - current_risk) < tolerance:
-                    weights = new_weights
-                    break
-                    
-                weights = new_weights
-                prev_risk = current_risk
-            
-            # Store refined portfolio
-            allocations = {name: f"{w*100:.1f}%" for name, w in zip(stock_names, weights)}
-            refined_portfolios.append({
-                'return': np.dot(weights, expected_returns),
-                'risk': current_risk,
-                'target_return': target_return,
-                'allocation': allocations,
-                'original_risk': portfolio['risk'],
-                'improvement': portfolio['risk'] - current_risk
-            })
-        
-        return refined_portfolios
-
-    except Exception as e:
-        print(f"EF Refinement error: {str(e)}")
         return []
 
 def calculate_steepest_descent(stocks_df, learning_rate=0.01, max_iter=1000, tolerance=1e-6):

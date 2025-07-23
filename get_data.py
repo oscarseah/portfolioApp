@@ -8,25 +8,39 @@ try:
     # Read Excel file
     df = pd.read_excel(file_path, sheet_name='Sheet1', header=0)
     
-    # Set date column as index
+    # Convert and sort dates (latest first)
     df = df.rename(columns={'Exchange Date': 'Date'})
     df['Date'] = pd.to_datetime(df['Date'])
-    df = df.set_index('Date').sort_index()
+    df = df.set_index('Date').sort_index(ascending=False)
     
     # Initialize results storage
     results = []
     
     # Process each stock
     for stock in df.columns:
+        # Remove ALL nulls regardless of position
         series = df[stock].dropna()
-        semi_annual = series.resample('6M').last()  # Semi-annual resampling
         
-        if len(semi_annual) < 2:
-            continue  # Skip insufficient data
+        if len(series) == 0:
+            continue  # Skip if no data remains after cleaning
             
-        returns = semi_annual.pct_change().dropna()
+        # Get latest price (first value in descending-sorted data)
+        latest_price = series.iloc[0]
+        min_buy_in = latest_price * 100
         
-        if len(returns) == 0:
+        # Prepare data for resampling (requires ascending order)
+        series_asc = series.sort_index(ascending=True)
+        
+        # Resample semi-annually, ignoring periods with no data
+        semi_annual = series_asc.resample('6M').last()
+        
+        # Skip if insufficient data points after resampling
+        if len(semi_annual) < 3:  # Need at least 3 points for 2 returns
+            continue
+            
+        # Calculate returns and filter insufficient data
+        returns = semi_annual.pct_change().dropna()
+        if len(returns) < 2:  # Need at least 2 returns for meaningful stats
             continue
             
         avg_return = returns.mean()
@@ -34,6 +48,8 @@ try:
         
         results.append({
             'Stock': stock,
+            'Latest Price': latest_price,
+            'Min Buy In (RM)': min_buy_in,
             'Semi-Annual Return': avg_return,
             'Semi-Annual Risk': risk
         })
@@ -41,17 +57,20 @@ try:
     # Create results DataFrame
     results_df = pd.DataFrame(results)
     
-    # 🔑 KEY MODIFICATION: Round to 4 decimal places
+    # Format numerical columns
+    results_df['Latest Price'] = results_df['Latest Price'].round(4)
+    results_df['Min Buy In (RM)'] = results_df['Min Buy In (RM)'].round(2)
     results_df['Semi-Annual Return'] = results_df['Semi-Annual Return'].round(4)
     results_df['Semi-Annual Risk'] = results_df['Semi-Annual Risk'].round(4)
     
     # Save to Excel
-    output_file = 'stock_returns_risk.xlsx'
+    output_file = 'stock_analysis_results.xlsx'
     results_df.to_excel(output_file, index=False)
     
     print(f"Success! Results saved to '{output_file}'")
-    print("\nSample results (4 decimal places):")
-    print(results_df.head().to_string(float_format='{:,.4f}'.format))  #  Display 4 decimals
+    print(f"Analyzed {len(results_df)} stocks with sufficient data")
+    print("\nSample results:")
+    print(results_df.head().to_string(index=False))
 
 except Exception as e:
     print(f"Error: {str(e)}")
