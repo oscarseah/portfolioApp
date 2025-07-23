@@ -70,7 +70,13 @@ def process_optimization():
         if not filtered_in:
             initialize_stock_data()
         
-        stocks_df = pd.DataFrame(filtered_in)
+        # Filter based on min buy-in
+        eligible_stocks = [s for s in filtered_in if capital >= s.get('min_buy', float('inf'))]
+
+        if not eligible_stocks:
+            raise ValueError("No stocks meet the minimum buy-in requirement for the provided capital.")
+
+        stocks_df = pd.DataFrame(eligible_stocks)
         
         # Calculate efficient frontier and steepest descent
         frontier_data = calculate_efficient_frontier(stocks_df)

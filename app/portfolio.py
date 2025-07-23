@@ -4,40 +4,32 @@ import math
 import os
 from scipy.optimize import minimize
 
-# Set risk-free rate (semi-annual)
-SEMI_ANNUAL_RISK_FREE = 0.0145  # 1.45% per semi-annual period
-
 def get_stock_data():
-    """Load stock data with annual return/risk data"""
+    """Load stock data with semi-annual return/risk/sharpe and min buy-in"""
     try:
-        # First check if we already have the processed file
-        processed_file = 'stock_analysis_with_sharpe.xlsx'
-        if os.path.exists(processed_file):
-            df = pd.read_excel(processed_file)
-        else:
-            # If not, generate it from the raw data
-            input_file = 'stock_returns_risk.xlsx'
-            if not os.path.exists(input_file):
-                raise FileNotFoundError(f"Required file not found: {input_file}")
-            
-            results_df = pd.read_excel(input_file)
-            results_df = calculate_sharpe_ratios(results_df)
-            results_df.to_excel(processed_file, index=False)
-            df = results_df
-        
-        # Convert to list of dictionaries with consistent key names
+        processed_file = 'stock_analysis_results_with_sharpe.xlsx'
+        if not os.path.exists(processed_file):
+            raise FileNotFoundError(f"Required file not found: {processed_file}")
+
+        df = pd.read_excel(processed_file)
+        required_cols = ['Stock', 'Min Buy In (RM)', 'Semi-Annual Return', 'Semi-Annual Risk', 'Sharpe Ratio']
+        for col in required_cols:
+            if col not in df.columns:
+                raise ValueError(f"Missing required column: {col}")
+
         stocks = []
         for _, row in df.iterrows():
             stocks.append({
                 'Stock': row['Stock'],
                 'return': row['Semi-Annual Return'],
                 'risk': row['Semi-Annual Risk'],
-                'sharpe': row.get('Annualized Sharpe Ratio', np.nan)  # Use get for backward compatibility
+                'sharpe': row['Sharpe Ratio'],
+                'min_buy': row['Min Buy In (RM)']
             })
         return stocks
-    
+
     except Exception as e:
-        print(f"Error loading stocks: {str(e)}")
+        print(f"Error loading stock data: {str(e)}")
         return []
 
 def calculate_sharpe_ratios(results_df):
