@@ -4,7 +4,7 @@ import io
 import base64
 import pandas as pd
 import logging
-from .portfolio import get_stock_data, filter_stocks, calculate_efficient_frontier, calculate_steepest_descent
+from .portfolio import get_stock_data, filter_stocks, calculate_efficient_frontier, calculate_steepest_descent, refine_efficient_frontier
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -59,7 +59,8 @@ def register_routes(bp):
                 stocks_df = pd.DataFrame(filtered_in)
                 
                 # Calculate efficient frontier and steepest descent
-                frontier_data = calculate_efficient_frontier(stocks_df)
+                raw_frontier = calculate_efficient_frontier(stocks_df)
+                frontier_data = refine_efficient_frontier(raw_frontier, stocks_df)
                 if not frontier_data:
                     raise ValueError("Could not calculate efficient frontier")
                     

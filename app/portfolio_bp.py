@@ -8,7 +8,7 @@ import base64
 import pandas as pd
 import logging
 import numpy as np
-from .portfolio import get_stock_data, filter_stocks, calculate_efficient_frontier, calculate_steepest_descent
+from .portfolio import get_stock_data, filter_stocks, calculate_efficient_frontier, calculate_steepest_descent, refine_efficient_frontier
 
 # Create blueprint
 bp = Blueprint('portfolio_bp', __name__)
@@ -79,7 +79,8 @@ def process_optimization():
         stocks_df = pd.DataFrame(eligible_stocks)
         
         # Calculate efficient frontier and steepest descent
-        frontier_data = calculate_efficient_frontier(stocks_df)
+        raw_frontier = calculate_efficient_frontier(stocks_df)
+        frontier_data = refine_efficient_frontier(raw_frontier, stocks_df)
         if not frontier_data:
             raise ValueError("Could not calculate efficient frontier")
             
@@ -93,19 +94,22 @@ def process_optimization():
         low_risk = frontier_data[0]
         high_risk = frontier_data[-1]
         medium_risk = frontier_data[len(frontier_data)//2]
-        
+
         # Add type labels
         low_risk['type'] = 'Low Risk'
         medium_risk['type'] = 'Medium Risk'
         high_risk['type'] = 'High Risk'
-        
-        # Create allocation dictionaries
+
+        # Reconstruct weights from allocation strings for each portfolio
         stock_names = stocks_df['Stock'].values
         for port in [low_risk, medium_risk, high_risk]:
-            port['allocation'] = {
-                name: f"{w*100:.1f}%" 
-                for name, w in zip(stock_names, port['weights'])
-            }
+            allocation = port.get('allocation', {})
+            weights = []
+            for name in stock_names:
+                alloc_str = allocation.get(name, '0%')
+                alloc = float(alloc_str.strip('%')) / 100
+                weights.append(alloc)
+            port['weights'] = weights
         
         # Select portfolio based on strategy
         if strategy == 'conservative':
