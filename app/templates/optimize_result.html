@@ -54,12 +54,18 @@
                                 <th class="text-end">{{ capital|number_format(2) }}</th>
                             </tr>
                             <tr>
-                                <th colspan="2">Invested</th>
+                                <th>Invested</th>
+                                <th class="text-end">
+                                    {{ ((capital - leftover) / capital * 100)|number_format(2) }}%
+                                </th>
                                 <th></th>
                                 <th class="text-end">{{ (capital - leftover)|number_format(2) }}</th>
                             </tr>
                             <tr>
-                                <th colspan="2">Leftover</th>
+                                <th>Leftover</th>
+                                <th class="text-end">
+                                    {{ (leftover / capital * 100)|number_format(2) }}%
+                                </th>
                                 <th></th>
                                 <th class="text-end">{{ leftover|number_format(2) }}</th>
                             </tr>
