@@ -32,6 +32,40 @@ def get_stock_data():
         print(f"Error loading stock data: {str(e)}")
         return []
 
+def calculate_board_lots(allocation, capital, stocks_df):
+    details = []
+    invested = 0.0
+
+    for stock, alloc_str in allocation.items():
+        try:
+            percentage = float(alloc_str.strip('%'))
+        except (ValueError, AttributeError):
+            continue
+
+        target_amount = capital * percentage / 100
+        row = stocks_df.loc[stocks_df['Stock'] == stock]
+        if row.empty:
+            continue
+        min_buy = float(row['min_buy'].iloc[0])
+
+        board_lots = int(target_amount // min_buy)
+        if board_lots < 1:
+            continue
+
+        amount = board_lots * min_buy
+        units = board_lots * 100
+        invested += amount
+
+        details.append({
+            'stock': stock,
+            'allocation': alloc_str,
+            'amount': amount,
+            'units': units,
+        })
+
+    leftover = capital - invested
+    return details, invested, leftover
+
 def calculate_sharpe_ratios(results_df):
     """Calculate annualized Sharpe ratios for a DataFrame"""
     sharpe_ratios = []

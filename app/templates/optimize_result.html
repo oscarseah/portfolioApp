@@ -32,7 +32,8 @@
                             <tr>
                                 <th>Stock</th>
                                 <th class="text-end">Allocation</th>
-                                <th class="text-end">Amount (RM)</th>
+                                <th class="text-end">Units</th>
+                                <th class="text-end">Amount(RM)</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -40,6 +41,7 @@
                             <tr>
                                 <td>{{ item.stock }}</td>
                                 <td class="text-end">{{ item.allocation }}</td>
+                                <td class="text-end">{{ item.units }}</td>
                                 <td class="text-end">{{ item.amount|number_format(2) }}</td>
                             </tr>
                             {% endfor %}
@@ -48,7 +50,18 @@
                             <tr>
                                 <th>Total</th>
                                 <th class="text-end">100%</th>
+                                <th></th>
                                 <th class="text-end">{{ capital|number_format(2) }}</th>
+                            </tr>
+                            <tr>
+                                <th colspan="2">Invested</th>
+                                <th></th>
+                                <th class="text-end">{{ (capital - leftover)|number_format(2) }}</th>
+                            </tr>
+                            <tr>
+                                <th colspan="2">Leftover</th>
+                                <th></th>
+                                <th class="text-end">{{ leftover|number_format(2) }}</th>
                             </tr>
                         </tfoot>
                     </table>

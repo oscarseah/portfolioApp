@@ -8,7 +8,14 @@ import base64
 import pandas as pd
 import logging
 import numpy as np
-from .portfolio import get_stock_data, filter_stocks, calculate_efficient_frontier, calculate_steepest_descent, refine_efficient_frontier
+from .portfolio import (
+    get_stock_data,
+    filter_stocks,
+    calculate_efficient_frontier,
+    calculate_steepest_descent,
+    refine_efficient_frontier,
+    calculate_board_lots,
+)
 
 # Create blueprint
 bp = Blueprint('portfolio_bp', __name__)
@@ -148,23 +155,19 @@ def process_optimization():
         plot_url = base64.b64encode(img.getvalue()).decode('utf8')
         plt.close()
         
-        # Prepare allocation details
-        allocation_details = []
-        for stock, alloc in selected_port['allocation'].items():
-            percentage = float(alloc.strip('%'))
-            allocation_details.append({
-                'stock': stock,
-                'allocation': alloc,
-                'amount': capital * percentage / 100
-            })
-        
+        # Prepare allocation details using board lot multiples
+        allocation_details, invested, leftover = calculate_board_lots(
+            selected_port['allocation'], capital, stocks_df
+        )
+
         return render_template('optimize_result.html',
                                capital=capital,
                                strategy=strategy,
                                allocation_details=allocation_details,
                                expected_return=selected_port['return'],
                                expected_risk=selected_port['risk'],
-                               plot_url=plot_url)
+                               plot_url=plot_url,
+                               leftover=leftover)
         
     except Exception as e:
         logger.error(f"Optimization error: {str(e)}", exc_info=True)
