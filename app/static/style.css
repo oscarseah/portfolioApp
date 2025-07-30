@@ -1,9 +1,15 @@
 body {
     min-height: 100vh;
+    background-color: #f8f9fa;
+    padding-bottom: 60px;
 }
 
 .navbar {
     box-shadow: 0 2px 4px rgba(0, 0, 0, .1);
+}
+
+.navbar-brand {
+    font-weight: 600;
 }
 
 .card {
