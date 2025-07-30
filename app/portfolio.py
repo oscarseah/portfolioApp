@@ -68,34 +68,6 @@ def calculate_board_lots(allocation, capital, stocks_df):
     leftover = capital - invested
     return details, invested, leftover
 
-def calculate_sharpe_ratios(results_df):
-    # Calculate annualized Sharpe ratios for a DataFrame
-    sharpe_ratios = []
-    for _, row in results_df.iterrows():
-        avg_return = row['Semi-Annual Return']
-        risk = row['Semi-Annual Risk']
-        
-        # Calculate excess return
-        excess_return = avg_return - SEMI_ANNUAL_RISK_FREE
-        
-        # Handle near-zero risk cases
-        if risk > 1e-8:
-            # Annualize Sharpe ratio: multiply by sqrt(2) for semi-annual data
-            sharpe_ratio = (excess_return / risk) * math.sqrt(2)
-        else:
-            sharpe_ratio = np.nan
-        
-        sharpe_ratios.append(sharpe_ratio)
-    
-    # Add Sharpe ratio to DataFrame
-    results_df['Annualized Sharpe Ratio'] = sharpe_ratios
-    
-    # Round all numeric columns to 4 decimal places
-    numeric_cols = ['Semi-Annual Return', 'Semi-Annual Risk', 'Annualized Sharpe Ratio']
-    results_df[numeric_cols] = results_df[numeric_cols].round(4)
-    
-    return results_df
-
 def filter_stocks(stocks):
     # Filter stocks based on Sharpe ratio and minimum return
     # Returns two lists sorted by Sharpe Ratio
@@ -123,182 +95,127 @@ def filter_stocks(stocks):
         print(f"Filtering error: {str(e)}")
         return [], []
 
-# This will run when the module is executed directly
-if __name__ == "__main__":
-    # If run as script, generate and save the analysis
-    try:
-        stocks = get_stock_data()
-        if stocks:
-            # Save processed data
-            df = pd.DataFrame(stocks)
-            df.to_excel('stock_analysis_with_sharpe.xlsx', index=False)
-            
-            print(f"Using semi-annual risk-free rate: {SEMI_ANNUAL_RISK_FREE:.4f}")
-            print(f"Saved processed data to 'stock_analysis_with_sharpe.xlsx'")
-            
-            # Show top performers
-            filtered_in, _ = filter_stocks(stocks)
-            top_stocks = pd.DataFrame(filtered_in).head()
-            print("\nTop performing stocks by Sharpe ratio:")
-            print(top_stocks[['Stock', 'return', 'risk', 'sharpe']].to_string(index=False))
-    except Exception as e:
-        print(f"Runtime error: {str(e)}")
+# Helper to build common portfolio parameters
+def build_portfolio_params(stocks_df, correlation=0.65):
+    expected_returns = stocks_df['return'].values
+    risks = stocks_df['risk'].values
+    stock_names = stocks_df['Stock'].values
+    cov_matrix = np.outer(risks, risks) * correlation
+    np.fill_diagonal(cov_matrix, risks**2)
+    return expected_returns, risks, stock_names, cov_matrix
 
-# Portfolio optimization functions
+
 def calculate_efficient_frontier(stocks_df):
     # Calculate efficient frontier portfolios from filtered stocks DataFrame
     try:
-        # Input validation
         if len(stocks_df) < 2:
             raise ValueError("Select at least 2 different stocks")
 
-        # Extract parameters from DataFrame
-        expected_returns = stocks_df['return'].values
-        risks = stocks_df['risk'].values
+        # Common setup
+        expected_returns, risks, stock_names, cov_matrix = build_portfolio_params(stocks_df)
         n_stocks = len(stocks_df)
-        stock_names = stocks_df['Stock'].values
-
-        # Construct covariance matrix assuming 65% correlation between stocks
-        correlation = 0.65  # Stocks in same market typically correlate
-        cov_matrix = np.outer(risks, risks) * correlation
-        np.fill_diagonal(cov_matrix, risks**2)  # Set diagonal to variance
 
         # Portfolio helper functions
         def portfolio_return(weights):
-            # Return the expected portfolio return
             return np.dot(weights, expected_returns)
 
         def portfolio_risk(weights):
-            # Return the portfolio risk (standard deviation)
-            return np.sqrt(np.dot(weights.T, np.dot(cov_matrix, weights)))
+            return np.sqrt(weights.T @ cov_matrix @ weights)
 
-        # Set optimization constraints
-        bounds = [(0.01, 0.9) for _ in range(n_stocks)]  # 1%-90% per stock
-        constraints = [{'type': 'eq', 'fun': lambda x: np.sum(x) - 1}]  # Sum to 100%
+        # Constraints
+        bounds = [(0.01, 0.9)] * n_stocks
+        base_constraint = {'type': 'eq', 'fun': lambda x: np.sum(x) - 1}
 
         # Target returns range
-        min_return = np.min(expected_returns) * 0.9  # 10% below minimum
-        max_return = np.max(expected_returns) * 1.1  # 10% above maximum
-        target_returns = np.linspace(min_return, max_return, 30)  # 30 points
+        min_return = expected_returns.min() * 0.9
+        max_return = expected_returns.max() * 1.1
+        target_returns = np.linspace(min_return, max_return, 30)
 
-        # Storage for optimized portfolios
         efficient_portfolios = []
 
-        # Optimize for each target return
-        for target in target_returns:
-            # Create a copy of constraints to avoid mutation issues
-            current_constraints = constraints.copy()
-            current_constraints.append({'type': 'eq', 'fun': lambda x, t=target: portfolio_return(x) - t})
-            
+        for t in target_returns:
+            constraints = [base_constraint,
+                           {'type': 'eq', 'fun': lambda x, target=t: portfolio_return(x) - target}]
             result = minimize(
                 portfolio_risk,
                 x0=np.ones(n_stocks)/n_stocks,
                 method='SLSQP',
                 bounds=bounds,
-                constraints=current_constraints
+                constraints=constraints
             )
-            
             if result.success:
                 efficient_portfolios.append({
                     'return': portfolio_return(result.x),
                     'risk': portfolio_risk(result.x),
                     'weights': result.x,
-                    'target_return': target
+                    'target_return': t
                 })
-        
-        # Sort portfolios by risk
-        efficient_portfolios.sort(key=lambda x: x['risk'])
 
+        efficient_portfolios.sort(key=lambda x: x['risk'])
         return efficient_portfolios
 
     except Exception as e:
         print(f"Efficient Frontier error: {str(e)}")
         return []
 
+
 def refine_efficient_frontier(efficient_portfolios, stocks_df, learning_rate=0.01, max_iter=1000, tolerance=1e-6):
     # Refine efficient frontier portfolios using steepest descent
     try:
-        # Input validation
         if not efficient_portfolios:
             raise ValueError("Efficient frontier is empty")
-            
-        # Extract parameters from stock data
-        expected_returns = stocks_df['return'].values
-        risks = stocks_df['risk'].values
-        stock_names = stocks_df['Stock'].values
-        
-        # Construct covariance matrix
-        correlation = 0.65
-        cov_matrix = np.outer(risks, risks) * correlation
-        np.fill_diagonal(cov_matrix, risks**2)
-        
-        # Storage for refined portfolios
+
+        expected_returns, risks, stock_names, cov_matrix = build_portfolio_params(stocks_df)
         refined_portfolios = []
-        
-        for portfolio in efficient_portfolios:
-            # Get original weights and target return
-            weights = portfolio['weights'].copy()
-            target_return = portfolio['target_return']
-            
-            # Define objective and gradient with return constraint
+
+        for port in efficient_portfolios:
+            weights = port['weights'].copy()
+            target_return = port['target_return']
+
             def objective(w):
-                # Compute portfolio risk for given weights
                 return np.sqrt(w.T @ cov_matrix @ w)
 
             def gradient(w):
-                # Gradient of the risk objective
-                port_risk = objective(w)
-                if port_risk < 1e-10:
-                    return np.zeros_like(w)
-                return (cov_matrix @ w) / port_risk
+                r = objective(w)
+                return np.zeros_like(w) if r < 1e-10 else (cov_matrix @ w) / r
 
             def return_constraint(w):
-                # Difference between achieved and target return
                 return np.dot(w, expected_returns) - target_return
-                
-            # Gradient descent with return constraint
+
             prev_risk = objective(weights)
             for _ in range(max_iter):
-                # Compute gradient
                 grad = gradient(weights)
-                
-                # Update weights
-                new_weights = weights - learning_rate * grad
-                
-                # Project onto constraints
-                new_weights = np.clip(new_weights, 0.01, 0.9)
-                new_weights /= new_weights.sum()
-                
-                # Adjust to maintain target return
-                if abs(return_constraint(new_weights)) > 0.001:
-                    # Simple projection to maintain return
-                    current_return = np.dot(new_weights, expected_returns)
-                    adjustment = target_return - current_return
-                    return_diffs = expected_returns - np.mean(expected_returns)
-                    new_weights += adjustment * return_diffs / (return_diffs @ return_diffs)
-                    new_weights = np.clip(new_weights, 0.01, 0.9)
-                    new_weights /= new_weights.sum()
-                
-                # Check convergence
-                current_risk = objective(new_weights)
-                if abs(prev_risk - current_risk) < tolerance:
-                    weights = new_weights
+                new_w = weights - learning_rate * grad
+                new_w = np.clip(new_w, 0.01, 0.9)
+                new_w /= new_w.sum()
+
+                # Maintain return
+                if abs(return_constraint(new_w)) > 0.001:
+                    current_ret = new_w @ expected_returns
+                    adj = target_return - current_ret
+                    diffs = expected_returns - expected_returns.mean()
+                    new_w += adj * diffs / (diffs @ diffs)
+                    new_w = np.clip(new_w, 0.01, 0.9)
+                    new_w /= new_w.sum()
+
+                curr_risk = objective(new_w)
+                if abs(prev_risk - curr_risk) < tolerance:
+                    weights = new_w
                     break
-                    
-                weights = new_weights
-                prev_risk = current_risk
-            
-            # Store refined portfolio
-            allocations = {name: f"{w*100:.1f}%" for name, w in zip(stock_names, weights)}
+
+                weights = new_w
+                prev_risk = curr_risk
+
+            allocs = {name: f"{w*100:.1f}%" for name, w in zip(stock_names, weights)}
             refined_portfolios.append({
-                'return': np.dot(weights, expected_returns),
-                'risk': current_risk,
+                'return': weights @ expected_returns,
+                'risk': curr_risk,
                 'target_return': target_return,
-                'allocation': allocations,
-                'original_risk': portfolio['risk'],
-                'improvement': portfolio['risk'] - current_risk
+                'allocation': allocs,
+                'original_risk': port['risk'],
+                'improvement': port['risk'] - curr_risk
             })
-        
+
         return refined_portfolios
 
     except Exception as e:
