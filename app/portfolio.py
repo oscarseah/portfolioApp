@@ -5,7 +5,7 @@ import os
 from scipy.optimize import minimize
 
 def get_stock_data():
-    """Load stock data with semi-annual return/risk/sharpe and min buy-in"""
+    # Load stock data with semi-annual return/risk/sharpe and min buy-in
     try:
         processed_file = 'stock_analysis_results_with_sharpe.xlsx'
         if not os.path.exists(processed_file):
@@ -33,6 +33,8 @@ def get_stock_data():
         return []
 
 def calculate_board_lots(allocation, capital, stocks_df):
+    # Calculate board-lot purchases for each stock allocation
+
     details = []
     invested = 0.0
 
@@ -67,7 +69,7 @@ def calculate_board_lots(allocation, capital, stocks_df):
     return details, invested, leftover
 
 def calculate_sharpe_ratios(results_df):
-    """Calculate annualized Sharpe ratios for a DataFrame"""
+    # Calculate annualized Sharpe ratios for a DataFrame
     sharpe_ratios = []
     for _, row in results_df.iterrows():
         avg_return = row['Semi-Annual Return']
@@ -95,10 +97,8 @@ def calculate_sharpe_ratios(results_df):
     return results_df
 
 def filter_stocks(stocks):
-    """
-    Filter stocks based on Sharpe ratio and minimum return
-    Returns two lists sorted by Sharpe Ratio
-    """
+    # Filter stocks based on Sharpe ratio and minimum return
+    # Returns two lists sorted by Sharpe Ratio
     try:
         filtered_in = []
         filtered_out = []
@@ -146,7 +146,7 @@ if __name__ == "__main__":
 
 # Portfolio optimization functions
 def calculate_efficient_frontier(stocks_df):
-    """Calculate efficient frontier portfolios from filtered stocks DataFrame"""
+    # Calculate efficient frontier portfolios from filtered stocks DataFrame
     try:
         # Input validation
         if len(stocks_df) < 2:
@@ -163,11 +163,13 @@ def calculate_efficient_frontier(stocks_df):
         cov_matrix = np.outer(risks, risks) * correlation
         np.fill_diagonal(cov_matrix, risks**2)  # Set diagonal to variance
 
-        # Portfolio functions
+        # Portfolio helper functions
         def portfolio_return(weights):
+            # Return the expected portfolio return
             return np.dot(weights, expected_returns)
-        
+
         def portfolio_risk(weights):
+            # Return the portfolio risk (standard deviation)
             return np.sqrt(np.dot(weights.T, np.dot(cov_matrix, weights)))
 
         # Set optimization constraints
@@ -214,7 +216,7 @@ def calculate_efficient_frontier(stocks_df):
         return []
 
 def refine_efficient_frontier(efficient_portfolios, stocks_df, learning_rate=0.01, max_iter=1000, tolerance=1e-6):
-    """Refine efficient frontier portfolios using steepest descent"""
+    # Refine efficient frontier portfolios using steepest descent
     try:
         # Input validation
         if not efficient_portfolios:
@@ -240,15 +242,18 @@ def refine_efficient_frontier(efficient_portfolios, stocks_df, learning_rate=0.0
             
             # Define objective and gradient with return constraint
             def objective(w):
+                # Compute portfolio risk for given weights
                 return np.sqrt(w.T @ cov_matrix @ w)
-                
+
             def gradient(w):
+                # Gradient of the risk objective
                 port_risk = objective(w)
                 if port_risk < 1e-10:
                     return np.zeros_like(w)
                 return (cov_matrix @ w) / port_risk
-                
+
             def return_constraint(w):
+                # Difference between achieved and target return
                 return np.dot(w, expected_returns) - target_return
                 
             # Gradient descent with return constraint
@@ -301,7 +306,7 @@ def refine_efficient_frontier(efficient_portfolios, stocks_df, learning_rate=0.0
         return []
 
 def calculate_steepest_descent(stocks_df, learning_rate=0.01, max_iter=1000, tolerance=1e-6):
-    """Calculate minimum risk portfolio using gradient descent"""
+    # Calculate minimum risk portfolio using gradient descent
     try:
         # Input validation
         if len(stocks_df) < 2:
@@ -320,9 +325,11 @@ def calculate_steepest_descent(stocks_df, learning_rate=0.01, max_iter=1000, tol
 
         # Define objective and gradient
         def objective(weights):
+            # Compute portfolio risk for given weights
             return np.sqrt(np.dot(weights.T, np.dot(cov_matrix, weights)))
 
         def gradient(weights):
+            # Gradient of the risk objective
             port_risk = objective(weights)
             if port_risk < 1e-10:
                 return np.zeros_like(weights)

@@ -30,6 +30,8 @@ filtered_in = None
 filtered_out = None
 
 def initialize_stock_data():
+    # Load stock data and apply initial filtering
+
     global all_stocks, filtered_in, filtered_out
     try:
         all_stocks = get_stock_data() or []
@@ -45,6 +47,7 @@ initialize_stock_data()
 # Add template filter to blueprint
 @bp.app_template_filter('number_format')
 def number_format_filter(value, decimals=0):
+    # Format numbers with commas and optional decimals
     try:
         if value is None:
             return ""
@@ -54,16 +57,17 @@ def number_format_filter(value, decimals=0):
 
 @bp.route('/')
 def home():
+    # Redirect to the optimization form
     return redirect(url_for('portfolio_bp.show_optimization_form'))
 
 @bp.route('/optimize', methods=['GET'])
 def show_optimization_form():
-    """Show the optimization form"""
+    # Show the optimization form
     return render_template('optimize_form.html', error=None)
 
 @bp.route('/optimize', methods=['POST'])
 def process_optimization():
-    """Process optimization form submission"""
+    # Process optimization form submission
     try:
         capital = float(request.form.get('capital'))
         strategy = request.form.get('strategy')
