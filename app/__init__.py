@@ -1,6 +1,9 @@
 from flask import Flask
 
+
 def create_app():
+    # Create and configure the Flask application
+
     # Initialize Flask application
     app = Flask(__name__)
     
@@ -11,7 +14,7 @@ def create_app():
     # Add number_format filter
     @app.template_filter('number_format')
     def number_format_filter(value, decimals=0):
-        """Format numbers with commas and decimals"""
+        # Format numbers with commas and decimals
         try:
             if value is None:
                 return ""

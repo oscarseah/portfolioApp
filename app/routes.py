@@ -16,7 +16,7 @@ filtered_in = None
 filtered_out = None
 
 def initialize_stock_data():
-    """Initialize stock data with proper error handling"""
+    # Initialize stock data with proper error handling
     global all_stocks, filtered_in, filtered_out
     try:
         all_stocks = get_stock_data() or []
@@ -31,14 +31,16 @@ def initialize_stock_data():
 initialize_stock_data()
 
 def register_routes(bp):
-    """Register all routes with the blueprint"""
+    # Register all routes with the blueprint
     
     @bp.route('/')
     def home():
+        # Redirect to the optimization page
         return redirect(url_for('portfolio_bp.optimize_portfolio'))
 
     @bp.route('/optimize', methods=['GET', 'POST'])
     def optimize_portfolio():
+        # Handle the portfolio optimization workflow
         error = None
         if request.method == 'POST':
             try:
