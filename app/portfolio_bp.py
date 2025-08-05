@@ -15,6 +15,7 @@ from .portfolio import (
     calculate_steepest_descent,
     refine_efficient_frontier,
     calculate_board_lots,
+    recompute_metrics,
 )
 
 # Create blueprint
@@ -164,14 +165,21 @@ def process_optimization():
             selected_port['allocation'], capital, stocks_df
         )
 
+         # Recompute portfolio metrics based on actual investable amounts
+        actual_return, actual_risk, allocation_details = recompute_metrics(
+            allocation_details, capital, stocks_df
+        )
+        allocation_sum = sum(d['amount'] for d in allocation_details) / capital * 100
+
         return render_template('optimize_result.html',
                                capital=capital,
                                strategy=strategy,
                                allocation_details=allocation_details,
-                               expected_return=selected_port['return'],
-                               expected_risk=selected_port['risk'],
+                               expected_return=actual_return,
+                               expected_risk=actual_risk,
                                plot_url=plot_url,
-                               leftover=leftover)
+                               leftover=leftover,
+                               allocation_sum=allocation_sum)
         
     except Exception as e:
         logger.error(f"Optimization error: {str(e)}", exc_info=True)

@@ -2,7 +2,8 @@ import pandas as pd
 import numpy as np
 
 # Load and process data
-file_path = 'malaysia stock price 3Y.xlsx'
+# file_path = '2021-2024 KLCI 30 index stock price'
+file_path = '2021-2024 FTSE 100 index stock price'
 
 # Set risk-free rate 
 ANNUAL_RF_RATE = 0.0291  
@@ -77,7 +78,8 @@ try:
     results_df['Sharpe Ratio'] = results_df['Sharpe Ratio'].round(4)
     
     # Save to Excel
-    output_file = 'stock_analysis_results_with_sharpe.xlsx'
+    # output_file = 'stock analysis 2021-2024 KLCI 30 index.xlsx'
+    output_file = 'stock analysis 2021-2024 FTSE 100 index.xlsx'
     results_df.to_excel(output_file, index=False)
     
     print(f"Success! Results saved to '{output_file}'")

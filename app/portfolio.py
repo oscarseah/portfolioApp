@@ -7,7 +7,8 @@ from scipy.optimize import minimize
 def get_stock_data():
     # Load stock data with semi-annual return/risk/sharpe and min buy-in
     try:
-        processed_file = 'stock_analysis_results_with_sharpe.xlsx'
+        # processed_file = 'stock analysis 2021-2024 KLCI 30 index.xlsx'
+        processed_file = 'stock analysis 2021-2024 FTSE 100 index.xlsx'
         if not os.path.exists(processed_file):
             raise FileNotFoundError(f"Required file not found: {processed_file}")
 
@@ -38,6 +39,11 @@ def calculate_board_lots(allocation, capital, stocks_df):
     details = []
     invested = 0.0
 
+    # Pre-compute lookups for efficiency
+    sharpe_lookup = stocks_df.set_index('Stock')['sharpe'].to_dict()
+    min_buy_lookup = stocks_df.set_index('Stock')['min_buy'].to_dict()
+
+    # First pass: allocate based on requested percentages
     for stock, alloc_str in allocation.items():
         try:
             percentage = float(alloc_str.strip('%'))
@@ -45,10 +51,9 @@ def calculate_board_lots(allocation, capital, stocks_df):
             continue
 
         target_amount = capital * percentage / 100
-        row = stocks_df.loc[stocks_df['Stock'] == stock]
-        if row.empty:
+        min_buy = float(min_buy_lookup.get(stock, 0))
+        if min_buy <= 0:
             continue
-        min_buy = float(row['min_buy'].iloc[0])
 
         board_lots = int(target_amount // min_buy)
         if board_lots < 1:
@@ -58,15 +63,87 @@ def calculate_board_lots(allocation, capital, stocks_df):
         units = board_lots * 100
         invested += amount
 
+        realized_pct = amount / capital * 100 if capital else 0
+
         details.append({
             'stock': stock,
-            'allocation': alloc_str,
+            'allocation': f"{realized_pct:.2f}%",
             'amount': amount,
             'units': units,
         })
 
     leftover = capital - invested
+
+    # Reallocate leftover capital to highest Sharpe ratio stock that can be bought
+    if details:
+        # Minimum buy values for purchased stocks
+        min_buys = {d['stock']: min_buy_lookup[d['stock']] for d in details}
+
+        # Target amounts for each stock based on original allocation
+        targets = {}
+        for stock, alloc_str in allocation.items():
+            try:
+                pct = float(alloc_str.strip('%'))
+            except (ValueError, AttributeError):
+                continue
+            targets[stock] = capital * pct / 100
+
+        # First try to fill shortfalls against the original target allocations
+        while leftover >= min(min_buys.values()):
+            gaps = []
+            for d in details:
+                tgt = targets.get(d['stock'], 0)
+                gap = tgt - d['amount']
+                if gap >= min_buys[d['stock']] and leftover >= min_buys[d['stock']]:
+                    gaps.append((gap, d))
+            if not gaps:
+                break
+            # allocate to stock with largest gap from its target
+            gaps.sort(key=lambda x: x[0], reverse=True)
+            best = gaps[0][1]
+            buy = min_buys[best['stock']]
+            best['units'] += 100
+            best['amount'] += buy
+            invested += buy
+            leftover -= buy
+
+        # If leftover remains, allocate to the highest Sharpe ratio stock
+        while leftover >= min(min_buys.values()):
+            candidates = [d for d in details if leftover >= min_buys[d['stock']]]
+            if not candidates:
+                break
+            best = max(candidates, key=lambda d: sharpe_lookup.get(d['stock'], 0))
+            buy = min_buys[best['stock']]
+            best['units'] += 100
+            best['amount'] += buy
+            invested += buy
+            leftover -= buy
+
     return details, invested, leftover
+
+def recompute_metrics(allocation_details, capital, stocks_df):
+
+    if capital <= 0 or stocks_df.empty:
+        return 0.0, 0.0, allocation_details
+
+    names = stocks_df['Stock'].tolist()
+
+    # Prepare weight vector based on actual invested amounts
+    weights = []
+    for name in names:
+        detail = next((d for d in allocation_details if d['stock'] == name), None)
+        w = detail['amount'] / capital if detail else 0.0
+        weights.append(w)
+        if detail is not None:
+            detail['allocation'] = f"{w*100:.1f}%"
+
+    expected_returns, risks, stock_names, cov_matrix = build_portfolio_params(stocks_df)
+
+    w_vec = np.array(weights)
+    port_return = float(np.dot(w_vec, expected_returns))
+    port_risk = float(np.sqrt(w_vec.T @ cov_matrix @ w_vec))
+
+    return port_return, port_risk, allocation_details
 
 def filter_stocks(stocks):
     # Filter stocks based on Sharpe ratio and minimum return
