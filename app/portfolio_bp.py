@@ -73,8 +73,8 @@ def process_optimization():
         capital = float(request.form.get('capital'))
         strategy = request.form.get('strategy')
         
-        if capital < 1000:
-            raise ValueError("Minimum investment is RM 1,000")
+        if capital < 10000:
+            raise ValueError("Minimum investment is RM 10,000")
         if strategy not in ['conservative', 'balanced', 'aggressive']:
             raise ValueError("Invalid strategy selected")
         

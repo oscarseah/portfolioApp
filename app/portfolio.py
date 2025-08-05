@@ -39,8 +39,6 @@ def calculate_board_lots(allocation, capital, stocks_df):
     details = []
     invested = 0.0
 
-    # Pre-compute lookups for efficiency
-    sharpe_lookup = stocks_df.set_index('Stock')['sharpe'].to_dict()
     min_buy_lookup = stocks_df.set_index('Stock')['min_buy'].to_dict()
 
     # First pass: allocate based on requested percentages
@@ -73,51 +71,6 @@ def calculate_board_lots(allocation, capital, stocks_df):
         })
 
     leftover = capital - invested
-
-    # Reallocate leftover capital to highest Sharpe ratio stock that can be bought
-    if details:
-        # Minimum buy values for purchased stocks
-        min_buys = {d['stock']: min_buy_lookup[d['stock']] for d in details}
-
-        # Target amounts for each stock based on original allocation
-        targets = {}
-        for stock, alloc_str in allocation.items():
-            try:
-                pct = float(alloc_str.strip('%'))
-            except (ValueError, AttributeError):
-                continue
-            targets[stock] = capital * pct / 100
-
-        # First try to fill shortfalls against the original target allocations
-        while leftover >= min(min_buys.values()):
-            gaps = []
-            for d in details:
-                tgt = targets.get(d['stock'], 0)
-                gap = tgt - d['amount']
-                if gap >= min_buys[d['stock']] and leftover >= min_buys[d['stock']]:
-                    gaps.append((gap, d))
-            if not gaps:
-                break
-            # allocate to stock with largest gap from its target
-            gaps.sort(key=lambda x: x[0], reverse=True)
-            best = gaps[0][1]
-            buy = min_buys[best['stock']]
-            best['units'] += 100
-            best['amount'] += buy
-            invested += buy
-            leftover -= buy
-
-        # If leftover remains, allocate to the highest Sharpe ratio stock
-        while leftover >= min(min_buys.values()):
-            candidates = [d for d in details if leftover >= min_buys[d['stock']]]
-            if not candidates:
-                break
-            best = max(candidates, key=lambda d: sharpe_lookup.get(d['stock'], 0))
-            buy = min_buys[best['stock']]
-            best['units'] += 100
-            best['amount'] += buy
-            invested += buy
-            leftover -= buy
 
     return details, invested, leftover
 
