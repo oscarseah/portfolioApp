@@ -165,9 +165,9 @@ def process_optimization():
             selected_port['allocation'], capital, stocks_df
         )
 
-         # Recompute portfolio metrics based on actual investable amounts
+        # Recompute portfolio metrics based on actual invested amounts
         actual_return, actual_risk, allocation_details = recompute_metrics(
-            allocation_details, capital, stocks_df
+            allocation_details, invested, stocks_df
         )
         allocation_sum = sum(d['amount'] for d in allocation_details) / capital * 100
 

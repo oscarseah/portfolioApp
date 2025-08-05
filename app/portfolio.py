@@ -76,9 +76,9 @@ def calculate_board_lots(allocation, capital, stocks_df):
 
     return details, invested, leftover
 
-def recompute_metrics(allocation_details, capital, stocks_df):
+def recompute_metrics(allocation_details, invested, stocks_df):
 
-    if capital <= 0 or stocks_df.empty:
+    if invested <= 0 or stocks_df.empty:
         return 0.0, 0.0, allocation_details
 
     names = stocks_df['Stock'].tolist()
@@ -87,7 +87,7 @@ def recompute_metrics(allocation_details, capital, stocks_df):
     weights = []
     for name in names:
         detail = next((d for d in allocation_details if d['stock'] == name), None)
-        w = detail['amount'] / capital if detail else 0.0
+        w = detail['amount'] / invested if detail else 0.0
         weights.append(w)
         if detail is not None:
             detail['allocation'] = f"{w*100:.1f}%"
