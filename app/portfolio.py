@@ -9,8 +9,8 @@ def get_stock_data():
     try:
         # processed_file = 'data/processed/stock analysis 2025 KLCI 30 index.xlsx'
         # processed_file = 'data/processed/stock analysis 2025 FTSE 100 index.xlsx'
-        processed_file = 'data/processed/stock analysis 2021-2024 KLCI 30 index.xlsx'
-        # processed_file = 'data/processed/stock analysis 2021-2024 FTSE 100 index.xlsx'
+        # processed_file = 'data/processed/stock analysis 2021-2024 KLCI 30 index.xlsx'
+        processed_file = 'data/processed/stock analysis 2021-2024 FTSE 100 index.xlsx'
         if not os.path.exists(processed_file):
             raise FileNotFoundError(f"Required file not found: {processed_file}")
 
