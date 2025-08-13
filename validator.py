@@ -27,34 +27,28 @@ def to_bp(x: float) -> float:
 def fmt_bp(x: float) -> str:
     return f"{x:+.0f} bp"
 
-# Optional alert thresholds (tune as you like)
-TOL_RET_BP  = 50   # flag if |Δ return| > 50 bp (0.50%)
-TOL_RISK_BP = 25   # flag if |Δ risk|   > 25 bp (0.25%)
-
 # ---------- main ----------
 if __name__ == "__main__":
     prices = load_prices("data/raw/2025 FTSE 100 index stock price.xlsx")
 
     # WEIGHTS 
     w_train = pd.Series({
-        "Tanco Holdings Bhd": 0.026,
-        "Bursa Malaysia Bhd": 0.974,
+        "Tanco Holdings Bhd": 0.044,
+        "IGB Real Estate Investment Trust": 0.956,
     })
 
     # Expected from your generator
-    expected_ret_sa   = 0.0839   # semi-annual return
-    expected_risk_sa = 0.0792   # annualized risk (vol)
+    expected_ret_sa   = 0.0793   # semi-annual return
+    expected_risk_sa = 0.0710   # annualized risk (vol)
 
     # OOS blocks (add more if needed)
     blocks = [
-        # ("2025-01-02", "2025-06-30"),
-        ("2024-07-01", "2025-06-30"),
+        ("2025-01-02", "2025-06-30"),
     ]
 
     # Prep returns
     r = daily_returns(prices)
-    # test = r.loc["2025-01-02":"2025-06-30"].dropna(axis=1, how="all")
-    test = r.loc["2024-07-01":"2025-06-30"].dropna(axis=1, how="all")
+    test = r.loc["2025-01-02":"2025-06-30"].dropna(axis=1, how="all")
 
     # Align weights to available tickers
     w = w_train.reindex(test.columns).fillna(0.0)
@@ -91,8 +85,6 @@ if __name__ == "__main__":
             "expected_risk_sa": expected_risk_sa,
             "d_risk": d_risk,
             "d_risk_bp": to_bp(d_risk),
-            "ret_flag": "⚠" if abs(to_bp(d_ret))  > TOL_RET_BP  else "✓",
-            "risk_flag":"⚠" if abs(to_bp(d_risk)) > TOL_RISK_BP else "✓",
         })
 
     diff = pd.DataFrame(rows)
@@ -115,14 +107,14 @@ if __name__ == "__main__":
 
     cols = [
         "period",
-        "realized_ret_sa", "expected_ret_sa", "d_ret_pct", "d_ret_bp", "ret_flag",
-        "realized_risk_sa", "expected_risk_sa", "d_risk_pct", "d_risk_bp", "risk_flag",
+        "realized_ret_sa", "expected_ret_sa", "d_ret_pct", "d_ret_bp",
+        "realized_risk_sa", "expected_risk_sa", "d_risk_pct", "d_risk_bp",
     ]
     print("\n=== Out-of-sample vs Expected (Semi-Annual) ===")
     print(disp[cols].to_string(index=False))
 
     # Quick one-liners (extra-straightforward)
-    print("\n=== Differences (human-readable) ===")
+    print("\n=== Differences ===")
     for _, r in diff.iterrows():
-        print(f"[{r['period']}] Return Δ: {fmt_pct(r['d_ret'])} ({fmt_bp(r['d_ret_bp'])}) { '⚠' if r['ret_flag']=='⚠' else '✓' }")
-        print(f"[{r['period']}] Risk   Δ: {fmt_pct(r['d_risk'])} ({fmt_bp(r['d_risk_bp'])}) { '⚠' if r['risk_flag']=='⚠' else '✓' }")
+        print(f"[{r['period']}] Return : {fmt_pct(r['d_ret'])} ({fmt_bp(r['d_ret_bp'])})")
+        print(f"[{r['period']}] Risk   : {fmt_pct(r['d_risk'])} ({fmt_bp(r['d_risk_bp'])})")
