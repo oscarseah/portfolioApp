@@ -27,19 +27,36 @@ def to_bp(x: float) -> float:
 def fmt_bp(x: float) -> str:
     return f"{x:+.0f} bp"
 
+def fmt_money(x: float) -> str:
+    return f"${x:,.2f}"
+
 # ---------- main ----------
 if __name__ == "__main__":
     prices = load_prices("data/raw/2025 FTSE 100 index stock price.xlsx")
 
     # WEIGHTS 
     w_train = pd.Series({
-        "Tanco Holdings Bhd": 0.044,
-        "IGB Real Estate Investment Trust": 0.956,
+        # "Tanco Holdings Bhd": 0.924,
+        # "ITMAX System Bhd": 0.008,
+        # "United Plantations Bhd": 0.256,
+        # "OSK Holdings Bhd": 0.009,        
+        # "NationGate Holdings Bhd": 0.008,        
+        # "CIMB Group Holdings Bhd": 0.008,        
+        # "AMMB Holdings Bhd": 0.127,        
+        # "KPJ Healthcare Bhd": 0.01,        
+        # "Sunway Bhd": 0.865,        
+        # "IGB Real Estate Investment Trust": 0.018,
+        # "FTSE Bursa 100 Index": 1,
+        "FTSE Bursa Malaysia KLCI Index": 1,
     })
 
+    # CAPITAL INVESTED 
+    capital_invested = 1_000_000.0
+
     # Expected from your generator
-    expected_ret_sa   = 0.0793   # semi-annual return
-    expected_risk_sa = 0.0710   # annualized risk (vol)
+    expected_ret_sa  = 0.0129   # semi-annual return
+    expected_risk_sa = 0.0381   # annualized risk (vol)
+    
 
     # OOS blocks (add more if needed)
     blocks = [
@@ -75,6 +92,9 @@ if __name__ == "__main__":
         d_ret   = realized_ret_sa   - expected_ret_sa
         d_risk  = realized_risk_sa - expected_risk_sa
 
+        realized_amount = capital_invested * (1 + realized_ret_sa)
+        expected_amount = capital_invested * (1 + expected_ret_sa)
+
         rows.append({
             "period": f"{start}→{end}",
             "realized_ret_sa": realized_ret_sa,
@@ -85,6 +105,8 @@ if __name__ == "__main__":
             "expected_risk_sa": expected_risk_sa,
             "d_risk": d_risk,
             "d_risk_bp": to_bp(d_risk),
+            "realized_amount": realized_amount,
+            "expected_amount": expected_amount,
         })
 
     diff = pd.DataFrame(rows)
@@ -104,17 +126,31 @@ if __name__ == "__main__":
     disp["expected_risk_sa"] = disp["expected_risk_sa"].map(lambda x: f"{x:.2%}")
     disp["d_risk_pct"]        = disp["d_risk"].map(fmt_pct)
     disp["d_risk_bp"]         = disp["d_risk_bp"].map(fmt_bp)
+    disp["realized_amount"]  = disp["realized_amount"].map(fmt_money)
+    disp["expected_amount"]  = disp["expected_amount"].map(fmt_money)
 
     cols = [
         "period",
         "realized_ret_sa", "expected_ret_sa", "d_ret_pct", "d_ret_bp",
-        "realized_risk_sa", "expected_risk_sa", "d_risk_pct", "d_risk_bp",
+        "realized_risk_sa", "expected_risk_sa", "d_risk_pct", "d_risk_bp","realized_amount", "expected_amount",
     ]
     print("\n=== Out-of-sample vs Expected (Semi-Annual) ===")
     print(disp[cols].to_string(index=False))
 
     # Quick one-liners (extra-straightforward)
-    print("\n=== Differences ===")
+    print("\n=== Performance ===")
     for _, r in diff.iterrows():
-        print(f"[{r['period']}] Return : {fmt_pct(r['d_ret'])} ({fmt_bp(r['d_ret_bp'])})")
-        print(f"[{r['period']}] Risk   : {fmt_pct(r['d_risk'])} ({fmt_bp(r['d_risk_bp'])})")
+        print(
+            f"[{r['period']}] Return: {fmt_pct(r['expected_ret_sa'])}"
+        )
+        print(
+            f"[{r['period']}] Risk  : {r['expected_risk_sa']:.2%}"
+        )
+        print(f"[{r['period']}] Realized Value: {fmt_money(r['expected_amount'])}")
+        print(
+            f"[{r['period']}] Return: {fmt_pct(r['realized_ret_sa'])}"
+        )
+        print(
+            f"[{r['period']}] Risk  : {r['realized_risk_sa']:.2%}"
+        )
+        print(f"[{r['period']}] Realized Value: {fmt_money(r['realized_amount'])}")
