@@ -40,7 +40,10 @@ for stock in df.columns:
     if daily.empty:
         continue
 
-    # Semi-annual risk from daily volatility.
+    # Semi-annual risk (σ_6m):
+    # 1) Compute sample stdev of daily simple returns over the last 6 months.
+    # 2) Scale by sqrt(N) to get the standard deviation of a 6-month return
+    #    (square-root-of-time rule; N = number of trading days in the window).
     risk_sa = daily.std(ddof=1) * np.sqrt(len(daily))
 
     # Latest price & min buy in
