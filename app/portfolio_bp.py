@@ -175,14 +175,16 @@ def process_optimization():
         allocation_sum = sum(d['amount'] for d in allocation_details) / capital * 100
 
         return render_template('optimize_result.html',
-                               capital=capital,
-                               strategy=strategy,
-                               allocation_details=allocation_details,
-                               grew_capital=grew_capital,
-                               semi_annual_return=semi_return,
-                               plot_url=plot_url,
-                               leftover=leftover,
-                               allocation_sum=allocation_sum)
+                                capital=capital,
+                                strategy=strategy,
+                                allocation_details=allocation_details,
+                                grew_capital=grew_capital,
+                                semi_annual_return=semi_return,
+                                portfolio_risk=actual_risk,
+                                plot_url=plot_url,
+                                leftover=leftover,
+                                allocation_sum=allocation_sum,
+                                )
         
     except Exception as e:
         logger.error(f"Optimization error: {str(e)}", exc_info=True)

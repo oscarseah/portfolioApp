@@ -88,7 +88,6 @@
                     </div>
                     <div class="d-flex justify-content-between mb-3">
                         <div>
-                            <h5 class="card-title">Expected Return</h5>
                             <h5 class="card-title">Semi-Annual Return</h5>
                             <p class="display-6 text-success">
                                 {{ (semi_annual_return * 100)|number_format(2) }}%
@@ -98,7 +97,7 @@
                         <div>
                             <h5 class="card-title">Expected Risk</h5>
                             <p class="display-6 text-warning">
-                                {{ (expected_risk * 100)|number_format(2) }}%
+                                {{ ((portfolio_risk | default(0)) * 100)|number_format(2) }}%
                             </p>
                             <p class="text-muted">Semi-annual risk (σ)</p>
                         </div>
