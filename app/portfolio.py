@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import math
 import os
+import json
 from scipy.optimize import minimize
 
 def get_stock_data():
@@ -36,8 +37,12 @@ def get_stock_data():
         print(f"Error loading stock data: {str(e)}")
         return []
 
-def calculate_board_lots(allocation, capital, stocks_df):
-    # Calculate board-lot purchases for each stock allocation
+def calculate_board_lots(allocation, capital, stocks_df, snapshot_path=None):
+    """Calculate board-lot purchases for each stock allocation.
+
+    If ``snapshot_path`` is provided the invested capital and holdings are
+    persisted to that JSON file for later performance calculations.
+    """
 
     details = []
     invested = 0.0
@@ -75,12 +80,72 @@ def calculate_board_lots(allocation, capital, stocks_df):
 
     leftover = capital - invested
 
+    if snapshot_path:
+        save_portfolio_snapshot(details, invested, snapshot_path)
+
     return details, invested, leftover
 
-def recompute_metrics(allocation_details, invested, stocks_df):
+def save_portfolio_snapshot(allocation_details, invested, path):
+    """Persist portfolio allocation and invested capital to JSON."""
+    try:
+        snapshot = {
+            'invested_capital': invested,
+            'holdings': [
+                {
+                    'stock': d['stock'],
+                    'units': d['units']
+                } for d in allocation_details
+            ]
+        }
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w') as f:
+            json.dump(snapshot, f)
+    except Exception as e:
+        print(f"Error saving portfolio snapshot: {e}")
+
+
+def calculate_semi_annual_return(snapshot_path, latest_price_file):
+    """Calculate grew capital and semi-annual return from stored snapshot."""
+    try:
+        if not os.path.exists(snapshot_path):
+            raise FileNotFoundError(f"Snapshot file not found: {snapshot_path}")
+
+        with open(snapshot_path, 'r') as f:
+            snapshot = json.load(f)
+
+        invested = snapshot.get('invested_capital', 0)
+        holdings = snapshot.get('holdings', [])
+        if invested <= 0 or not holdings:
+            return 0.0, 0.0
+
+        df_latest = pd.read_excel(latest_price_file)
+        required_cols = {'Stock', 'Latest Price'}
+        if not required_cols.issubset(df_latest.columns):
+            raise ValueError("Latest price file missing required columns")
+
+        price_lookup = df_latest.set_index('Stock')['Latest Price'].to_dict()
+
+        grew_capital = 0.0
+        for h in holdings:
+            stock = h['stock']
+            units = h['units']
+            price = price_lookup.get(stock)
+            if price is not None:
+                grew_capital += units * price
+
+        semi_annual_return = (grew_capital - invested) / invested if invested else 0.0
+        return grew_capital, semi_annual_return
+
+    except Exception as e:
+        print(f"Error calculating semi-annual return: {e}")
+        return 0.0, 0.0
+
+def recompute_metrics(allocation_details, invested, stocks_df, snapshot_path=None, latest_price_file=None):
+    """Recompute portfolio risk and performance based on actual holdings."""
+
 
     if invested <= 0 or stocks_df.empty:
-        return 0.0, 0.0, allocation_details
+        return 0.0, 0.0, 0.0, allocation_details
 
     names = stocks_df['Stock'].tolist()
 
@@ -93,13 +158,18 @@ def recompute_metrics(allocation_details, invested, stocks_df):
         if detail is not None:
             detail['allocation'] = f"{w*100:.1f}%"
 
-    expected_returns, risks, stock_names, cov_matrix = build_portfolio_params(stocks_df)
+    # Risk is derived from historical data
+    _, risks, _, cov_matrix = build_portfolio_params(stocks_df)
 
     w_vec = np.array(weights)
-    port_return = float(np.dot(w_vec, expected_returns))
     port_risk = float(np.sqrt(w_vec.T @ cov_matrix @ w_vec))
 
-    return port_return, port_risk, allocation_details
+    grew_capital = 0.0
+    semi_annual_return = 0.0
+    if snapshot_path and latest_price_file:
+        grew_capital, semi_annual_return = calculate_semi_annual_return(snapshot_path, latest_price_file)
+
+    return port_risk, grew_capital, semi_annual_return, allocation_details
 
 def filter_stocks(stocks):
     # Filter stocks based on Sharpe ratio and minimum return

@@ -18,6 +18,9 @@ from .portfolio import (
     recompute_metrics,
 )
 
+SNAPSHOT_PATH = 'data/processed/portfolio_snapshot.json'
+LATEST_PRICE_FILE = 'data/processed/stock analysis 2025 KLCI 30 index.xlsx'
+
 # Create blueprint
 bp = Blueprint('portfolio_bp', __name__)
 
@@ -160,14 +163,14 @@ def process_optimization():
         plot_url = base64.b64encode(img.getvalue()).decode('utf8')
         plt.close()
         
-        # Prepare allocation details using board lot multiples
+        # Prepare allocation details using board lot multiples and save snapshot
         allocation_details, invested, leftover = calculate_board_lots(
-            selected_port['allocation'], capital, stocks_df
+            selected_port['allocation'], capital, stocks_df, snapshot_path=SNAPSHOT_PATH
         )
 
-        # Recompute portfolio metrics based on actual invested amounts
-        actual_return, actual_risk, allocation_details = recompute_metrics(
-            allocation_details, invested, stocks_df
+        # Recompute portfolio metrics and compute grew capital/return
+        actual_risk, grew_capital, semi_return, allocation_details = recompute_metrics(
+            allocation_details, invested, stocks_df, snapshot_path=SNAPSHOT_PATH, latest_price_file=LATEST_PRICE_FILE
         )
         allocation_sum = sum(d['amount'] for d in allocation_details) / capital * 100
 
@@ -175,8 +178,8 @@ def process_optimization():
                                capital=capital,
                                strategy=strategy,
                                allocation_details=allocation_details,
-                               expected_return=actual_return,
-                               expected_risk=actual_risk,
+                               grew_capital=grew_capital,
+                               semi_annual_return=semi_return,
                                plot_url=plot_url,
                                leftover=leftover,
                                allocation_sum=allocation_sum)
