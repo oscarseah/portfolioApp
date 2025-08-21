@@ -19,7 +19,8 @@ from .portfolio import (
 )
 
 SNAPSHOT_PATH = 'data/processed/portfolio_snapshot.json'
-LATEST_PRICE_FILE = 'data/processed/stock analysis 2025 KLCI 30 index.xlsx'
+LATEST_PRICE_FILE = 'data/processed/stock analysis 2025 FTSE 100 index.xlsx'
+# LATEST_PRICE_FILE = 'data/processed/stock analysis 2025 KLCI 30 index.xlsx'
 
 # Create blueprint
 bp = Blueprint('portfolio_bp', __name__)
@@ -168,7 +169,7 @@ def process_optimization():
             selected_port['allocation'], capital, stocks_df, snapshot_path=SNAPSHOT_PATH
         )
 
-        # Recompute portfolio metrics and compute grew capital/return
+        # Recompute portfolio metrics using the actual board-lot purchases.
         actual_risk, grew_capital, semi_return, allocation_details = recompute_metrics(
             allocation_details, invested, stocks_df, snapshot_path=SNAPSHOT_PATH, latest_price_file=LATEST_PRICE_FILE
         )

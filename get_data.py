@@ -24,15 +24,18 @@ try:
     # Initialize results storage
     results = []
     
-    # Process each stock
+    # Process each stock column independently to compute its performance metrics. 
+    # Each column represents the historical price series for one ticker.
     for stock in df.columns:
-        # Remove ALL nulls regardless of position
+        # Remove ALL nulls regardless of position.  
+        # Any missing data would distort return calculations so we simply drop it.
         series = df[stock].dropna()
         
         if len(series) == 0:
             continue  # Skip if no data remains after cleaning
             
         # Get latest price (first value in descending-sorted data)
+        # Multiply by 100 to get the minimum board-lot purchase in the local market.
         latest_price = series.iloc[0]
         min_buy_in = latest_price * 100
         
@@ -56,6 +59,7 @@ try:
         risk = returns.std()
         
         # Calculate Sharpe ratio
+        # Sharpe ratio = excess return / risk.
         sharpe_ratio = (avg_return - SEMI_ANNUAL_RF_RATE) / risk if risk != 0 else np.nan
         
         results.append({

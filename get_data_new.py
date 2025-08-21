@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 
-# --- config ---
 # file_path = 'data/raw/2025 KLCI 30 index stock price.xlsx'
 file_path = 'data/raw/2025 FTSE 100 index stock price.xlsx'
 ANNUAL_RF_RATE = 0.0291
@@ -10,7 +9,7 @@ SEMI_ANNUAL_RF_RATE = (1 + ANNUAL_RF_RATE) ** 0.5 - 1  # same scale as 6m return
 # minimum data sanity
 MIN_DAYS = 60
 
-# --- load ---
+# Read the raw price file
 df = pd.read_excel(file_path, sheet_name='Sheet1', header=0)
 df = df.rename(columns={'Exchange Date': 'Date'})
 df['Date'] = pd.to_datetime(df['Date'])
@@ -19,6 +18,8 @@ df = df.set_index('Date').sort_index(ascending=True)  # ascending for slicing
 results = []
 
 for stock in df.columns:
+    # "series" holds the clean price history for one stock
+    # "dropna" is used to remove any missing prices that would break our return computations.
     series = df[stock].dropna()
     if series.empty:
         continue
@@ -32,7 +33,7 @@ for stock in df.columns:
     if window.shape[0] < MIN_DAYS:
         continue
 
-    # Semi-annual (6m) return: compound from first to last price in the window
+     # Semi-annual (6m) return: compound growth from the first to the last price in the window.
     semi_annual_return = window.iloc[-1] / window.iloc[0] - 1
 
     # Daily returns in the window
