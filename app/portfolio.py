@@ -2,15 +2,16 @@ import pandas as pd
 import numpy as np
 import math
 import os
+import json
 from scipy.optimize import minimize
 
 def get_stock_data():
     # Load stock data with semi-annual return/risk/sharpe and min buy-in
     try:
         
-        processed_file = 'data/processed/stock analysis 2021-2024 KLCI 30 index.xlsx'
+        # processed_file = 'data/processed/stock analysis 2021-2024 KLCI 30 index.xlsx'
         # processed_file = 'data/processed/stock analysis 2025 KLCI 30 index.xlsx'
-        # processed_file = 'data/processed/stock analysis 2021-2024 FTSE 100 index.xlsx'
+        processed_file = 'data/processed/stock analysis 2021-2024 FTSE 100 index.xlsx'
         # processed_file = 'data/processed/stock analysis 2025 FTSE 100 index.xlsx'
         if not os.path.exists(processed_file):
             raise FileNotFoundError(f"Required file not found: {processed_file}")
@@ -36,8 +37,12 @@ def get_stock_data():
         print(f"Error loading stock data: {str(e)}")
         return []
 
-def calculate_board_lots(allocation, capital, stocks_df):
-    # Calculate board-lot purchases for each stock allocation
+def calculate_board_lots(allocation, capital, stocks_df, snapshot_path=None):
+    """Calculate board-lot purchases for each stock allocation.
+
+    If ``snapshot_path`` is provided the invested capital and holdings are
+    persisted to that JSON file for later performance calculations.
+    """
 
     details = []
     invested = 0.0
@@ -75,31 +80,108 @@ def calculate_board_lots(allocation, capital, stocks_df):
 
     leftover = capital - invested
 
+    if snapshot_path:
+        save_portfolio_snapshot(details, invested, snapshot_path)
+
     return details, invested, leftover
 
-def recompute_metrics(allocation_details, invested, stocks_df):
+def save_portfolio_snapshot(allocation_details, invested, path):
+    """Persist portfolio allocation and invested capital to JSON."""
+    try:
+        snapshot = {
+            'invested_capital': invested,
+            'holdings': [
+                {
+                    'stock': d['stock'],
+                    'units': d['units']
+                } for d in allocation_details
+            ]
+        }
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w') as f:
+            json.dump(snapshot, f)
+    except Exception as e:
+        print(f"Error saving portfolio snapshot: {e}")
+
+
+def calculate_semi_annual_return(snapshot_path, latest_price_file):
+    # Calculate current portfolio value and semi-annual return.
+    try:
+        if not os.path.exists(snapshot_path):
+            raise FileNotFoundError(f"Snapshot file not found: {snapshot_path}")
+
+        # Load the snapshot saved at purchase time.
+        # It records the amount invested and the number of units purchased for each stock.
+        with open(snapshot_path, 'r') as f:
+            snapshot = json.load(f)
+
+        invested = snapshot.get('invested_capital', 0)
+        holdings = snapshot.get('holdings', [])
+        if invested <= 0 or not holdings:
+            return 0.0, 0.0
+
+        # Read the latest market prices.
+        df_latest = pd.read_excel(latest_price_file)
+        required_cols = {'Stock', 'Latest Price'}
+        if not required_cols.issubset(df_latest.columns):
+            raise ValueError("Latest price file missing required columns")
+
+        price_lookup = df_latest.set_index('Stock')['Latest Price'].to_dict()
+
+        # Revalue the holdings at current market prices.
+        grew_capital = 0.0
+        for h in holdings:
+            stock = h['stock']
+            units = h['units']
+            price = price_lookup.get(stock)
+            if price is not None:
+                grew_capital += units * price
+
+        # Semi-annual return expressed as percentage growth over the invested capital.
+        semi_annual_return = (grew_capital - invested) / invested if invested else 0.0
+        return grew_capital, semi_annual_return
+
+    except Exception as e:
+        print(f"Error calculating semi-annual return: {e}")
+        return 0.0, 0.0
+
+def recompute_metrics(allocation_details, invested, stocks_df, snapshot_path=None, latest_price_file=None):
+    """Recompute portfolio risk and performance based on actual holdings."""
+
 
     if invested <= 0 or stocks_df.empty:
-        return 0.0, 0.0, allocation_details
+        return 0.0, 0.0, 0.0, allocation_details
 
     names = stocks_df['Stock'].tolist()
 
-    # Prepare weight vector based on actual invested amounts
+    # Prepare weight vector based on actual invested amounts.  
+    # Each weight is the fraction of total invested capital allocated to that stock.
     weights = []
     for name in names:
         detail = next((d for d in allocation_details if d['stock'] == name), None)
         w = detail['amount'] / invested if detail else 0.0
         weights.append(w)
         if detail is not None:
+            # Update allocation to reflect actual weight achieved after rounding to board-lot multiples.
             detail['allocation'] = f"{w*100:.1f}%"
 
-    expected_returns, risks, stock_names, cov_matrix = build_portfolio_params(stocks_df)
+    # Risk is derived from historical data
+    # the covariance matrix built from individual stock risks and an assumed constant correlation.
+    _, risks, _, cov_matrix = build_portfolio_params(stocks_df)
 
+    # Portfolio risk is the standard deviation of returns, computed as
+    # sqrt(w^T Σ w) where Σ is the covariance matrix and w is the weight vector.
     w_vec = np.array(weights)
-    port_return = float(np.dot(w_vec, expected_returns))
     port_risk = float(np.sqrt(w_vec.T @ cov_matrix @ w_vec))
 
-    return port_return, port_risk, allocation_details
+    # Optionally compute current portfolio value and realized semi‑annual return
+    # if a snapshot and latest prices are provided.
+    grew_capital = 0.0
+    semi_annual_return = 0.0
+    if snapshot_path and latest_price_file:
+        grew_capital, semi_annual_return = calculate_semi_annual_return(snapshot_path, latest_price_file)
+
+    return port_risk, grew_capital, semi_annual_return, allocation_details
 
 def filter_stocks(stocks):
     # Filter stocks based on Sharpe ratio and minimum return
@@ -153,6 +235,8 @@ def calculate_efficient_frontier(stocks_df):
             return np.dot(weights, expected_returns)
 
         def portfolio_risk(weights):
+            # Standard deviation of portfolio returns for a given weight vector
+            # calculated via sqrt(w^T Σ w)
             return np.sqrt(weights.T @ cov_matrix @ weights)
 
         # Constraints
@@ -162,7 +246,7 @@ def calculate_efficient_frontier(stocks_df):
         # Target returns range
         min_return = expected_returns.min() * 0.9
         max_return = expected_returns.max() * 1.1
-        target_returns = np.linspace(min_return, max_return, 30)
+        target_returns = np.linspace(min_return, max_return, 50)
 
         efficient_portfolios = []
 
@@ -210,6 +294,8 @@ def refine_efficient_frontier(efficient_portfolios, stocks_df, learning_rate=0.0
 
             def gradient(w):
                 r = objective(w)
+                # Gradient of sqrt(w^T Σ w) with respect to w is (Σ w) / r
+                # where r is the current portfolio risk.
                 return np.zeros_like(w) if r < 1e-10 else (cov_matrix @ w) / r
 
             def return_constraint(w):
@@ -275,11 +361,12 @@ def calculate_steepest_descent(stocks_df, learning_rate=0.01, max_iter=1000, tol
 
         # Define objective and gradient
         def objective(weights):
-            # Compute portfolio risk for given weights
+            # Compute portfolio risk for given weights using the covariance
+            # matrix: sqrt(w^T Σ w)
             return np.sqrt(np.dot(weights.T, np.dot(cov_matrix, weights)))
 
         def gradient(weights):
-            # Gradient of the risk objective
+            # Gradient of the risk objective sqrt(w^T Σ w).
             port_risk = objective(weights)
             if port_risk < 1e-10:
                 return np.zeros_like(weights)
