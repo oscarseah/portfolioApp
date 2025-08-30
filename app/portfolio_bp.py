@@ -23,7 +23,7 @@ LATEST_PRICE_FILE = 'data/processed/stock analysis 2025 FTSE 100 index.xlsx'
 # LATEST_PRICE_FILE = 'data/processed/stock analysis 2025 KLCI 30 index.xlsx'
 
 # Fixed deposit annual interest rate for Maybank
-MAYBANK_FD_RATE = 0.035  # 3.5% p.a.
+MAYBANK_FD_RATE = 0.022 
 
 # Create blueprint
 bp = Blueprint('portfolio_bp', __name__)
@@ -178,18 +178,23 @@ def process_optimization():
         )
         allocation_sum = sum(d['amount'] for d in allocation_details) / capital * 100
 
+        # Combine stock growth with fixed-deposit interest for unused capital.
+        fd_interest = leftover * MAYBANK_FD_RATE / 2  # semi-annual interest
+        grew_capital = stock_value + leftover + fd_interest
+        semi_annual_return = (grew_capital - capital) / capital if capital else 0.0
+
         return render_template('optimize_result.html',
                                 capital=capital,
                                 strategy=strategy,
                                 allocation_details=allocation_details,
-                                stock_value=stock_value,
-                                stock_return=stock_return,
+                                grew_capital=grew_capital,
+                                semi_annual_return=semi_annual_return,
                                 portfolio_risk=actual_risk,
                                 plot_url=plot_url,
                                 leftover=leftover,
                                 allocation_sum=allocation_sum,
                                 fd_rate=MAYBANK_FD_RATE,
-                                )
+                            )
         
     except Exception as e:
         logger.error(f"Optimization error: {str(e)}", exc_info=True)

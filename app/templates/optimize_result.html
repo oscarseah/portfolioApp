@@ -71,10 +71,10 @@
                             </tr>
                         </tfoot>
                     </table>
-                </div>
-                <div class="alert alert-info mb-0">
-                    All uninvested capital will be invested in the Maybank fixed deposit at
-                    {{ (fd_rate * 100)|number_format(2) }}% p.a.
+                    <div class="alert alert-info mt-2 mb-0">
+                        All uninvested capital will be invested in the Maybank fixed deposit at
+                        {{ (fd_rate * 100)|number_format(2) }}% p.a.
+                    </div>
                 </div>
             </div>
         </div>
@@ -87,13 +87,13 @@
                 <div class="card-body">
                     <div class="mb-3 text-center">
                         <h5 class="card-title">Grew Capital</h5>
-                        <p id="grew-capital" class="display-6 text-success"></p>
+                        <p id="grew-capital" class="display-6 text-success">RM {{ grew_capital|number_format(2) }}</p>
                         <p class="text-muted">Portfolio value end Jun 2025</p>
                     </div>
                     <div class="d-flex justify-content-between mb-3">
                         <div>
                             <h5 class="card-title">Semi-Annual Return</h5>
-                            <p id="semi-annual-return" class="display-6 text-success"></p>
+                            <p id="semi-annual-return" class="display-6 text-success">{{ (semi_annual_return * 100)|number_format(2) }}%</p>
                             <p class="text-muted">Growth over total capital</p>
                         </div>
                         <div>
@@ -134,27 +134,4 @@
         </div>
     </div>
 </div>
-
-<script>
-    const stockValue = {{ stock_value }};
-    const capital = {{ capital }};
-    const leftover = {{ leftover }};
-    const fdRate = {{ fd_rate }};
-
-    function formatNumber(num, decimals = 2) {
-        return num.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    }
-
-    function updateMetrics() {
-        if (selectedRate === null) return;
-        const fdInterest = leftover * fdRate / 2; // semi-annual interest
-        const total = stockValue + leftover + fdInterest;
-        const semiReturn = ((total - capital) / capital) * 100;
-
-        document.getElementById('grew-capital').textContent = 'RM ' + formatNumber(total, 2);
-        document.getElementById('semi-annual-return').textContent = formatNumber(semiReturn, 2) + '%';
-    }
-
-    updateMetrics();
-</script>
 {% endblock %}
