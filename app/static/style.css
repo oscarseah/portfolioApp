@@ -1,7 +1,6 @@
 body {
     min-height: 100vh;
     background-color: #f8f9fa;
-    padding-bottom: 60px;
 }
 
 .navbar {
@@ -25,18 +24,10 @@ body {
     font-weight: 500;
 }
 
-.results {
-    margin-top: 2rem;
-}
-
 .card-footer {
     border-top: none;
 }
 
 .img-fluid {
     border-radius: 0.5rem;
-}
-
-.form-select {
-    margin-bottom: 15px;
 }
