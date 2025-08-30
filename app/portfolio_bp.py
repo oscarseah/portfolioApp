@@ -22,12 +22,8 @@ SNAPSHOT_PATH = 'data/processed/portfolio_snapshot.json'
 LATEST_PRICE_FILE = 'data/processed/stock analysis 2025 FTSE 100 index.xlsx'
 # LATEST_PRICE_FILE = 'data/processed/stock analysis 2025 KLCI 30 index.xlsx'
 
-# Fixed deposit annual interest rates for Malaysian banks
-FD_RATES = {
-    "Maybank": 0.035,      # 3.5% p.a.
-    "CIMB": 0.033,         # 3.3% p.a.
-    "Public Bank": 0.034   # 3.4% p.a.
-}
+# Fixed deposit annual interest rate for Maybank
+MAYBANK_FD_RATE = 0.035  # 3.5% p.a.
 
 # Create blueprint
 bp = Blueprint('portfolio_bp', __name__)
@@ -192,7 +188,7 @@ def process_optimization():
                                 plot_url=plot_url,
                                 leftover=leftover,
                                 allocation_sum=allocation_sum,
-                                fd_rates=FD_RATES,
+                                fd_rate=MAYBANK_FD_RATE,
                                 )
         
     except Exception as e:

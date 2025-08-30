@@ -72,24 +72,9 @@
                         </tfoot>
                     </table>
                 </div>
-                <div class="px-3 pb-3">
-                    <label class="form-label mb-2">Fixed Deposit Bank</label>
-                    <table id="fdTable" class="table table-sm table-hover align-middle">
-                        <thead>
-                            <tr>
-                                <th>Bank</th>
-                                <th class="text-end">Rate (p.a.)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for bank, rate in fd_rates.items() %}
-                            <tr class="fd-row" role="button" tabindex="0" data-rate="{{ rate }}">
-                                <td>{{ bank }}</td>
-                                <td class="text-end">{{ (rate * 100)|number_format(2) }}%</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                <div class="alert alert-info mb-0">
+                    All uninvested capital will be invested in the Maybank fixed deposit at
+                    {{ (fd_rate * 100)|number_format(2) }}% p.a.
                 </div>
             </div>
         </div>
@@ -154,8 +139,7 @@
     const stockValue = {{ stock_value }};
     const capital = {{ capital }};
     const leftover = {{ leftover }};
-
-    let selectedRate = null;
+    const fdRate = {{ fd_rate }};
 
     function formatNumber(num, decimals = 2) {
         return num.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -163,7 +147,7 @@
 
     function updateMetrics() {
         if (selectedRate === null) return;
-        const fdInterest = leftover * selectedRate / 2; // semi-annual interest
+        const fdInterest = leftover * fdRate / 2; // semi-annual interest
         const total = stockValue + leftover + fdInterest;
         const semiReturn = ((total - capital) / capital) * 100;
 
@@ -171,30 +155,6 @@
         document.getElementById('semi-annual-return').textContent = formatNumber(semiReturn, 2) + '%';
     }
 
-    function selectRow(row) {
-        // Clear previous selection
-        document.querySelectorAll('#fdTable .fd-row').forEach(r => r.classList.remove('table-active'));
-        // Mark new selection
-        row.classList.add('table-active');
-
-        // Update state
-        selectedRate = parseFloat(row.dataset.rate);
-        updateMetrics();
-    }
-
-    // Attach handlers
-    document.querySelectorAll('#fdTable .fd-row').forEach(row => {
-        row.addEventListener('click', () => selectRow(row));
-        row.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                selectRow(row);
-            }
-        });
-    });
-
-    // Initialize with first row selected (if any)
-    const firstRow = document.querySelector('#fdTable .fd-row');
-    if (firstRow) selectRow(firstRow);
+    updateMetrics();
 </script>
 {% endblock %}
