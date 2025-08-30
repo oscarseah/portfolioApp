@@ -48,12 +48,6 @@
                         </tbody>
                         <tfoot class="table-primary">
                             <tr>
-                                <th>Total</th>
-                                <th class="text-end">100.00%</th>
-                                <th></th>
-                                <th class="text-end">{{ capital|number_format(2) }}</th>
-                            </tr>
-                            <tr>
                                 <th>Invested</th>
                                 <th class="text-end">
                                     {{ ((capital - leftover) / capital * 100)|number_format(2) }}%
@@ -62,12 +56,18 @@
                                 <th class="text-end">{{ (capital - leftover)|number_format(2) }}</th>
                             </tr>
                             <tr>
-                                <th>Leftover</th>
+                                <th>Uninvested</th>
                                 <th class="text-end">
                                     {{ (leftover / capital * 100)|number_format(2) }}%
                                 </th>
                                 <th></th>
                                 <th class="text-end">{{ leftover|number_format(2) }}</th>
+                            </tr>
+                            <tr>
+                                <th>Total</th>
+                                <th class="text-end">100.00%</th>
+                                <th></th>
+                                <th class="text-end">{{ capital|number_format(2) }}</th>
                             </tr>
                         </tfoot>
                     </table>
