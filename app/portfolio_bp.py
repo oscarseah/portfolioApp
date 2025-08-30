@@ -22,6 +22,13 @@ SNAPSHOT_PATH = 'data/processed/portfolio_snapshot.json'
 LATEST_PRICE_FILE = 'data/processed/stock analysis 2025 FTSE 100 index.xlsx'
 # LATEST_PRICE_FILE = 'data/processed/stock analysis 2025 KLCI 30 index.xlsx'
 
+# Fixed deposit annual interest rates for Malaysian banks
+FD_RATES = {
+    "Maybank": 0.035,      # 3.5% p.a.
+    "CIMB": 0.033,         # 3.3% p.a.
+    "Public Bank": 0.034   # 3.4% p.a.
+}
+
 # Create blueprint
 bp = Blueprint('portfolio_bp', __name__)
 
@@ -170,7 +177,7 @@ def process_optimization():
         )
 
         # Recompute portfolio metrics using the actual board-lot purchases.
-        actual_risk, grew_capital, semi_return, allocation_details = recompute_metrics(
+        actual_risk, stock_value, stock_return, allocation_details = recompute_metrics(
             allocation_details, invested, stocks_df, snapshot_path=SNAPSHOT_PATH, latest_price_file=LATEST_PRICE_FILE
         )
         allocation_sum = sum(d['amount'] for d in allocation_details) / capital * 100
@@ -179,12 +186,13 @@ def process_optimization():
                                 capital=capital,
                                 strategy=strategy,
                                 allocation_details=allocation_details,
-                                grew_capital=grew_capital,
-                                semi_annual_return=semi_return,
+                                stock_value=stock_value,
+                                stock_return=stock_return,
                                 portfolio_risk=actual_risk,
                                 plot_url=plot_url,
                                 leftover=leftover,
                                 allocation_sum=allocation_sum,
+                                fd_rates=FD_RATES,
                                 )
         
     except Exception as e:

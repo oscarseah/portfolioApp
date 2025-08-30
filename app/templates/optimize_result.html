@@ -72,6 +72,25 @@
                         </tfoot>
                     </table>
                 </div>
+                <div class="px-3 pb-3">
+                    <label class="form-label mb-2">Fixed Deposit Bank</label>
+                    <table id="fdTable" class="table table-sm table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>Bank</th>
+                                <th class="text-end">Rate (p.a.)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for bank, rate in fd_rates.items() %}
+                            <tr class="fd-row" role="button" tabindex="0" data-rate="{{ rate }}">
+                                <td>{{ bank }}</td>
+                                <td class="text-end">{{ (rate * 100)|number_format(2) }}%</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -83,16 +102,14 @@
                 <div class="card-body">
                     <div class="mb-3 text-center">
                         <h5 class="card-title">Grew Capital</h5>
-                        <p class="display-6 text-success">RM {{ grew_capital|number_format(2) }}</p>
+                        <p id="grew-capital" class="display-6 text-success"></p>
                         <p class="text-muted">Portfolio value end Jun 2025</p>
                     </div>
                     <div class="d-flex justify-content-between mb-3">
                         <div>
                             <h5 class="card-title">Semi-Annual Return</h5>
-                            <p class="display-6 text-success">
-                                {{ (semi_annual_return * 100)|number_format(2) }}%
-                            </p>
-                            <p class="text-muted">Growth over invested capital</p>
+                            <p id="semi-annual-return" class="display-6 text-success"></p>
+                            <p class="text-muted">Growth over total capital</p>
                         </div>
                         <div>
                             <h5 class="card-title">Expected Risk</h5>
@@ -132,4 +149,52 @@
         </div>
     </div>
 </div>
+
+<script>
+    const stockValue = {{ stock_value }};
+    const capital = {{ capital }};
+    const leftover = {{ leftover }};
+
+    let selectedRate = null;
+
+    function formatNumber(num, decimals = 2) {
+        return num.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+
+    function updateMetrics() {
+        if (selectedRate === null) return;
+        const fdInterest = leftover * selectedRate / 2; // semi-annual interest
+        const total = stockValue + leftover + fdInterest;
+        const semiReturn = ((total - capital) / capital) * 100;
+
+        document.getElementById('grew-capital').textContent = 'RM ' + formatNumber(total, 2);
+        document.getElementById('semi-annual-return').textContent = formatNumber(semiReturn, 2) + '%';
+    }
+
+    function selectRow(row) {
+        // Clear previous selection
+        document.querySelectorAll('#fdTable .fd-row').forEach(r => r.classList.remove('table-active'));
+        // Mark new selection
+        row.classList.add('table-active');
+
+        // Update state
+        selectedRate = parseFloat(row.dataset.rate);
+        updateMetrics();
+    }
+
+    // Attach handlers
+    document.querySelectorAll('#fdTable .fd-row').forEach(row => {
+        row.addEventListener('click', () => selectRow(row));
+        row.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                selectRow(row);
+            }
+        });
+    });
+
+    // Initialize with first row selected (if any)
+    const firstRow = document.querySelector('#fdTable .fd-row');
+    if (firstRow) selectRow(firstRow);
+</script>
 {% endblock %}
