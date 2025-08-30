@@ -1,8 +1,8 @@
 import pandas as pd
 import numpy as np
 
-# file_path = 'data/raw/2025 KLCI 30 index stock price.xlsx'
-file_path = 'data/raw/2025 FTSE 100 index stock price.xlsx'
+file_path = 'data/raw/2025 KLCI 30 index stock price.xlsx'
+# file_path = 'data/raw/2025 FTSE 100 index stock price.xlsx'
 ANNUAL_RF_RATE = 0.0291
 SEMI_ANNUAL_RF_RATE = (1 + ANNUAL_RF_RATE) ** 0.5 - 1  # same scale as 6m return
 
@@ -64,8 +64,8 @@ for stock in df.columns:
     })
 
 results_df = pd.DataFrame(results).sort_values('Stock')
-# output_file = 'data/processed/stock analysis 2025 KLCI 30 index.xlsx'
-output_file = 'data/processed/stock analysis 2025 FTSE 100 index.xlsx'
+output_file = 'data/processed/stock analysis 2025 KLCI 30 index.xlsx'
+# output_file = 'data/processed/stock analysis 2025 FTSE 100 index.xlsx'
 results_df.to_excel(output_file, index=False)
 
 print(f"Success! Saved {len(results_df)} stocks → {output_file}")
