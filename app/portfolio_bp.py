@@ -138,6 +138,17 @@ def process_optimization():
         else:
             selected_port = medium_risk
 
+        # Prepare allocation details using board lot multiples and save snapshot
+        allocation_details, invested, leftover = calculate_board_lots(
+            selected_port['allocation'], capital, stocks_df, snapshot_path=SNAPSHOT_PATH
+        )
+
+        # Recompute portfolio metrics using the actual board-lot purchases.
+        actual_risk, stock_value, stock_return, allocation_details = recompute_metrics(
+            allocation_details, invested, stocks_df, snapshot_path=SNAPSHOT_PATH, latest_price_file=LATEST_PRICE_FILE
+        )
+        allocation_sum = sum(d['amount'] for d in allocation_details) / capital * 100
+
         # Create efficient frontier plot
         plt.figure(figsize=(10, 6))
         
@@ -146,12 +157,19 @@ def process_optimization():
         returns = [p['return'] for p in frontier_data]
         plt.plot(risks, returns, 'b-', label='Efficient Frontier')
         
+        # Plot each invested stock
+        for detail in allocation_details:
+            row = stocks_df[stocks_df['Stock'] == detail['stock']]
+            if not row.empty:
+                plt.scatter(row['risk'].iloc[0], row['return'].iloc[0],
+                            marker='x', color='orange', label=detail['stock'])
+                
         # Mark selected portfolio
-        plt.scatter(selected_port['risk'], selected_port['return'], 
+        plt.scatter(selected_port['risk'], selected_port['return'],
                     color='red', s=100, label='Selected Portfolio')
         
         # Mark steepest descent
-        plt.scatter(steepest_port['risk'], steepest_port['return'], 
+        plt.scatter(steepest_port['risk'], steepest_port['return'],
                     color='green', marker='*', s=150, label='Min Risk (Steepest Descent)')
         
         plt.xlabel('Risk (Semi-Annual)')
@@ -166,17 +184,6 @@ def process_optimization():
         img.seek(0)
         plot_url = base64.b64encode(img.getvalue()).decode('utf8')
         plt.close()
-        
-        # Prepare allocation details using board lot multiples and save snapshot
-        allocation_details, invested, leftover = calculate_board_lots(
-            selected_port['allocation'], capital, stocks_df, snapshot_path=SNAPSHOT_PATH
-        )
-
-        # Recompute portfolio metrics using the actual board-lot purchases.
-        actual_risk, stock_value, stock_return, allocation_details = recompute_metrics(
-            allocation_details, invested, stocks_df, snapshot_path=SNAPSHOT_PATH, latest_price_file=LATEST_PRICE_FILE
-        )
-        allocation_sum = sum(d['amount'] for d in allocation_details) / capital * 100
 
         # Combine stock growth with fixed-deposit interest for unused capital.
         fd_interest = leftover * MAYBANK_FD_RATE / 2  # semi-annual interest
