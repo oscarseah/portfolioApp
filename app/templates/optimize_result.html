@@ -9,12 +9,11 @@
             <span class="ms-2 badge bg-secondary fs-6">Capital: RM {{ capital|number_format(0) }}</span>
         </div>
     </div>
-
     <div class="card mb-4 shadow">
         <div class="card-header bg-primary text-white">
             Efficient Frontier Analysis
         </div>
-        <div class="card-body text-center">
+        <div class="text-center ">
             <img src="data:image/png;base64,{{ plot_url }}" class="img-fluid"
                 alt="Efficient Frontier with Selected Portfolio">
         </div>
@@ -57,7 +56,10 @@
                                     <th class="text-end">{{ (capital - leftover)|number_format(2) }}</th>
                                 </tr>
                                 <tr>
-                                    <th>Uninvested</th>
+                                    <th>Uninvested
+                                        <i class="bi bi-question-circle-fill ms-1 text-info" data-bs-toggle="tooltip" data-bs-placement="right"
+                                            title="All uninvested capital will be invested in the Maybank fixed deposit at {{ (fd_rate * 100)|number_format(2) }}% p.a." style="cursor: pointer;"></i>
+                                    </th>
                                     <th class="text-end">
                                         {{ (leftover / capital * 100)|number_format(2) }}%
                                     </th>
@@ -73,10 +75,6 @@
                             </tfoot>
                         </table>
                     </div>
-                    <div class="alert alert-info mt-2 mb-0">
-                        All uninvested capital will be invested in the Maybank fixed deposit at
-                        {{ (fd_rate * 100)|number_format(2) }}% p.a.
-                    </div>
                 </div>
             </div>
         </div>
@@ -91,13 +89,13 @@
                         <p id="grew-capital" class="text-success fs-3">RM {{ grew_capital|number_format(2) }}</p>
                         <p class="text-muted">Portfolio value end Jun 2025</p>
                     </div>
-                    <div class="row mb-3 text-center text-md-start">
-                        <div class="col-12 col-md-6 mb-3 mb-md-0">
+                    <div class="row mb-3 text-center">
+                        <div class="col-12 col-lg-6 mb-3 mb-md-0">
                             <h5 class="card-title">Semi-Annual Return</h5>
                             <p id="semi-annual-return" class="text-success fs-4">{{ (semi_annual_return * 100)|number_format(2) }}%</p>
                             <p class="text-muted">Growth over total capital</p>
                         </div>
-                        <div class="col-12 col-md-6">
+                        <div class="col-12 col-lg-6">
                             <h5 class="card-title">Expected Risk</h5>
                             <p class="text-warning fs-4">
                                 {{ ((portfolio_risk | default(0)) * 100)|number_format(2) }}%
@@ -105,9 +103,7 @@
                             <p class="text-muted">Semi-annual risk (σ)</p>
                         </div>
                     </div>
-
                     <hr>
-
                     <h5 class="mt-4">Strategy Details</h5>
                     <ul>
                         {% if strategy == 'conservative' %}

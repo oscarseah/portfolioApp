@@ -150,7 +150,7 @@ def process_optimization():
         allocation_sum = sum(d['amount'] for d in allocation_details) / capital * 100
 
         # Create efficient frontier plot
-        plt.figure(figsize=(15, 6))
+        plt.figure(figsize=(10, 6))
         
         # Plot efficient frontier
         risks = [p['risk'] for p in frontier_data]
