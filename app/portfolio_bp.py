@@ -1,13 +1,9 @@
 # portfolio_bp.py
 from flask import Blueprint, render_template, request, redirect, url_for
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import io
-import base64
 import pandas as pd
 import logging
-import numpy as np
+import plotly.graph_objects as go
+import plotly.io as pio
 from .portfolio import (
     get_stock_data,
     filter_stocks,
@@ -150,40 +146,58 @@ def process_optimization():
         allocation_sum = sum(d['amount'] for d in allocation_details) / capital * 100
 
         # Create efficient frontier plot
-        plt.figure(figsize=(10, 6))
-        
-        # Plot efficient frontier
         risks = [p['risk'] for p in frontier_data]
         returns = [p['return'] for p in frontier_data]
-        plt.plot(risks, returns, 'b-', label='Efficient Frontier')
-        
-        # Plot each invested stock
-        for detail in allocation_details:
-            row = stocks_df[stocks_df['Stock'] == detail['stock']]
-            if not row.empty:
-                plt.scatter(row['risk'].iloc[0], row['return'].iloc[0],
-                            marker='x', color='orange', label=detail['stock'])
-                
-        # Mark selected portfolio
-        plt.scatter(selected_port['risk'], selected_port['return'],
-                    color='red', s=100, label='Selected Portfolio')
-        
-        # Mark steepest descent
-        plt.scatter(steepest_port['risk'], steepest_port['return'],
-                    color='green', marker='*', s=150, label='Min Risk (Steepest Descent)')
-        
-        plt.xlabel('Risk (Semi-Annual)')
-        plt.ylabel('Return (Semi-Annual)')
-        plt.title(f'Portfolio Optimization - {strategy.capitalize()} Strategy')
-        plt.legend()
-        plt.grid(True)
-        
-        # Save plot
-        img = io.BytesIO()
-        plt.savefig(img, format='png', bbox_inches='tight')
-        img.seek(0)
-        plot_url = base64.b64encode(img.getvalue()).decode('utf8')
-        plt.close()
+
+        frontier_trace = go.Scatter(
+            x=risks, 
+            y=returns, 
+            mode='lines',
+            name='Efficient Frontier',
+            hoverinfo='skip'
+        )
+
+        # Individual stocks as scatter points with hover showing stock name
+        stock_trace = go.Scatter(
+            x=stocks_df['risk'],
+            y=stocks_df['return'],
+            mode='markers',
+            name='Individual Stocks',
+            text=stocks_df['Stock'],
+            hovertemplate='%{text}<extra></extra>',
+            marker=dict(size=8, color='gray')
+        )
+
+        selected_trace = go.Scatter(
+            x=[selected_port['risk']],
+            y=[selected_port['return']],
+            mode='markers',
+            name='Selected Portfolio',
+            marker=dict(color='red', size=12),
+            hoverinfo='skip'
+        )
+
+        steepest_trace = go.Scatter(
+            x=[steepest_port['risk']],
+            y=[steepest_port['return']],
+            mode='markers',
+            name='Min Risk (Steepest Descent)',
+            marker=dict(color='green', size=15, symbol='star'),
+            hoverinfo='skip'
+        )
+
+        fig = go.Figure(data=[frontier_trace, stock_trace,
+                               selected_trace, steepest_trace])
+        fig.update_layout(
+            xaxis_title='Risk (Semi-Annual)',
+            yaxis_title='Return (Semi-Annual)',
+            title=f'Portfolio Optimization - {strategy.capitalize()} Strategy',
+            template='plotly_white',
+            legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"),
+            hoverlabel=dict(bgcolor="white"),
+        )
+
+        plot_html = pio.to_html(fig, full_html=False)
 
         # Combine stock growth with fixed-deposit interest for unused capital.
         fd_interest = leftover * MAYBANK_FD_RATE / 2  # semi-annual interest
@@ -197,7 +211,7 @@ def process_optimization():
                                 grew_capital=grew_capital,
                                 semi_annual_return=semi_annual_return,
                                 portfolio_risk=actual_risk,
-                                plot_url=plot_url,
+                                plot_html=plot_html,
                                 leftover=leftover,
                                 allocation_sum=allocation_sum,
                                 fd_rate=MAYBANK_FD_RATE,

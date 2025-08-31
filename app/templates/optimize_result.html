@@ -13,9 +13,8 @@
         <div class="card-header bg-primary text-white">
             Efficient Frontier Analysis
         </div>
-        <div class="text-center ">
-            <img src="data:image/png;base64,{{ plot_url }}" class="img-fluid"
-                alt="Efficient Frontier with Selected Portfolio">
+        <div>
+            {{ plot_html|safe }}
         </div>
     </div>
 
@@ -92,12 +91,12 @@
                     <div class="row mb-3 text-center">
                         <div class="col-12 col-lg-6 mb-3 mb-md-0">
                             <h5 class="card-title">Semi-Annual Return</h5>
-                            <p id="semi-annual-return" class="text-success fs-4">{{ (semi_annual_return * 100)|number_format(2) }}%</p>
+                            <p id="semi-annual-return" class="text-success fs-3">{{ (semi_annual_return * 100)|number_format(2) }}%</p>
                             <p class="text-muted">Growth over total capital</p>
                         </div>
                         <div class="col-12 col-lg-6">
                             <h5 class="card-title">Expected Risk</h5>
-                            <p class="text-warning fs-4">
+                            <p class="text-warning fs-3">
                                 {{ ((portfolio_risk | default(0)) * 100)|number_format(2) }}%
                             </p>
                             <p class="text-muted">Semi-annual risk (σ)</p>
@@ -107,17 +106,17 @@
                     <h5 class="mt-4">Strategy Details</h5>
                     <ul>
                         {% if strategy == 'conservative' %}
-                        <li>Focuses on capital preservation</li>
-                        <li>Prioritizes low-volatility stocks</li>
-                        <li>Minimizes downside risk</li>
+                        <p>
+                            This strategy is designed for investors who value <B>capital preservation</B>, focusing on <B>low-volatility stocks</B> that help safeguard wealth. The primary goal is to <B>minimize downside risk</B>, making it suitable for risk-averse investors.
+                        </p>
                         {% elif strategy == 'balanced' %}
-                        <li>Balances growth and stability</li>
-                        <li>Diversified across sectors</li>
-                        <li>Moderate risk exposure</li>
+                        <p>
+                            The balanced strategy aims to combine <B>growth and stability</B>, offering a portfolio that is <B>diversified across sectors</B>. With a <B>moderate risk exposure</B>, it provides steady returns while maintaining resilience against market fluctuations.
+                        </p>
                         {% else %}
-                        <li>Seeks maximum growth potential</li>
-                        <li>Higher concentration in growth stocks</li>
-                        <li>Accepts higher volatility</li>
+                        <p>
+                            This approach targets <B>maximum growth potential</B> by holding a <B>higher concentration in growth stocks</B>. Investors adopting this strategy acknowledge and accept <B>higher volatility</B> in pursuit of stronger long-term gains.
+                        </p>
                         {% endif %}
                     </ul>
 
