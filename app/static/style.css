@@ -31,3 +31,11 @@ body {
 .img-fluid {
     border-radius: 0.5rem;
 }
+
+@media (max-width: 992px) {
+
+    .portfolio-table th,
+    .portfolio-table td {
+        font-size: 0.875rem;
+    }
+}
