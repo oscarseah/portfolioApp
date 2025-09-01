@@ -26,7 +26,7 @@
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-hover table-sm portfolio-table">
+                        <table class="table table-hover table-sm portfolio-table mb-4">
                             <thead>
                                 <tr>
                                     <th>Stock</th>
@@ -73,6 +73,29 @@
                                 </tr>
                             </tfoot>
                         </table>
+                        <hr>
+                        <h5 class="mt-4">Strategy Details</h5>
+                        <ul class="ps-0">
+                            {% if strategy == 'conservative' %}
+                            <p>
+                                This strategy is designed for investors who value <B>capital preservation</B>, focusing on <B>low-volatility
+                                    stocks</B> that help safeguard wealth. The primary goal is to <B>minimize downside risk</B>, making it
+                                suitable for risk-averse investors.
+                            </p>
+                            {% elif strategy == 'balanced' %}
+                            <p>
+                                The balanced strategy aims to combine <B>growth and stability</B>, offering a portfolio that is <B>diversified
+                                    across sectors</B>. With a <B>moderate risk exposure</B>, it provides steady returns while maintaining
+                                resilience against market fluctuations.
+                            </p>
+                            {% else %}
+                            <p>
+                                This approach targets <B>maximum growth potential</B> by holding a <B>higher concentration in growth stocks</B>.
+                                Investors adopting this strategy acknowledge and accept <B>higher volatility</B> in pursuit of stronger
+                                long-term gains.
+                            </p>
+                            {% endif %}
+                        </ul>
                     </div>
                 </div>
             </div>
@@ -103,22 +126,26 @@
                         </div>
                     </div>
                     <hr>
-                    <h5 class="mt-4">Strategy Details</h5>
-                    <ul>
-                        {% if strategy == 'conservative' %}
-                        <p>
-                            This strategy is designed for investors who value <B>capital preservation</B>, focusing on <B>low-volatility stocks</B> that help safeguard wealth. The primary goal is to <B>minimize downside risk</B>, making it suitable for risk-averse investors.
-                        </p>
-                        {% elif strategy == 'balanced' %}
-                        <p>
-                            The balanced strategy aims to combine <B>growth and stability</B>, offering a portfolio that is <B>diversified across sectors</B>. With a <B>moderate risk exposure</B>, it provides steady returns while maintaining resilience against market fluctuations.
-                        </p>
-                        {% else %}
-                        <p>
-                            This approach targets <B>maximum growth potential</B> by holding a <B>higher concentration in growth stocks</B>. Investors adopting this strategy acknowledge and accept <B>higher volatility</B> in pursuit of stronger long-term gains.
-                        </p>
-                        {% endif %}
-                    </ul>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Market Index Performance</th>
+                                    <th class="text-end">Annual Return</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>FTSE Bursa Malaysia KLCI Index</td>
+                                    <td class="text-end text-danger">-11.87%</td>
+                                </tr>
+                                <tr>
+                                    <td>FTSE Bursa Malaysia Top 100 Index</td>
+                                    <td class="text-end text-danger">-15.47%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
