@@ -119,15 +119,14 @@
                         </p>
                         {% endif %}
                     </ul>
-
-                    <div class="mt-4 d-grid">
-                        <a href="{{ url_for('portfolio_bp.show_optimization_form') }}" class="btn btn-outline-primary">
-                            Re-run Optimization
-                        </a>
-                    </div>
                 </div>
             </div>
         </div>
+    </div>
+    <div class="text-center mt-4">
+        <a href="{{ url_for('portfolio_bp.show_optimization_form') }}" class="btn btn-outline-primary">
+            <h5>Re-run Optimization</h5>
+        </a>
     </div>
 </div>
 {% endblock %}
