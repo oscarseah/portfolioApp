@@ -140,7 +140,7 @@ def process_optimization():
         )
 
         # Recompute portfolio metrics using the actual board-lot purchases.
-        actual_risk, stock_value, stock_return, allocation_details = recompute_metrics(
+        actual_risk, stock_value, _, allocation_details = recompute_metrics(
             allocation_details, invested, stocks_df, snapshot_path=SNAPSHOT_PATH, latest_price_file=LATEST_PRICE_FILE
         )
         allocation_sum = sum(d['amount'] for d in allocation_details) / capital * 100
@@ -189,27 +189,29 @@ def process_optimization():
         fig = go.Figure(data=[frontier_trace, stock_trace,
                                selected_trace, steepest_trace])
         fig.update_layout(
-            xaxis_title='Risk (Semi-Annual)',
-            yaxis_title='Return (Semi-Annual)',
+            xaxis_title='Risk (Annual)',
+            yaxis_title='Return (Annual)',
             title=f'Portfolio Optimization - {strategy.capitalize()} Strategy',
             template='plotly_white',
             legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"),
             hoverlabel=dict(bgcolor="white"),
         )
 
-        plot_html = pio.to_html(fig, full_html=False)
+        plot_html = pio.to_html(fig, full_html=False, include_plotlyjs='cdn', default_width='100%', default_height='500px')
 
         # Combine stock growth with fixed-deposit interest for unused capital.
-        fd_interest = leftover * MAYBANK_FD_RATE / 2  # semi-annual interest
+        # Only amounts above RM500 qualify for fixed deposit interest.
+        fd_interest = leftover * MAYBANK_FD_RATE / 2 if leftover >= 500 else 0
         grew_capital = stock_value + leftover + fd_interest
         semi_annual_return = (grew_capital - capital) / capital if capital else 0.0
+        annual_return = (1 + semi_annual_return) ** 2 - 1
 
         return render_template('optimize_result.html',
                                 capital=capital,
                                 strategy=strategy,
                                 allocation_details=allocation_details,
                                 grew_capital=grew_capital,
-                                semi_annual_return=semi_annual_return,
+                                annual_return=annual_return,
                                 portfolio_risk=actual_risk,
                                 plot_html=plot_html,
                                 leftover=leftover,

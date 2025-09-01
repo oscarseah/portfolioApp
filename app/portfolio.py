@@ -6,7 +6,7 @@ import json
 from scipy.optimize import minimize
 
 def get_stock_data():
-    # Load stock data with semi-annual return/risk/sharpe and min buy-in
+    # Load stock data and convert semi-annual returns and risk to annual figures
     try:
         
         # processed_file = 'data/processed/stock analysis 2021-2024 KLCI 30 index.xlsx'
@@ -22,10 +22,14 @@ def get_stock_data():
 
         stocks = []
         for _, row in df.iterrows():
+            sa_return = row['Semi-Annual Return']
+            annual_return = (1 + sa_return) ** 2 - 1
+            sa_risk = row['Semi-Annual Risk']
+            annual_risk = sa_risk * math.sqrt(2)
             stocks.append({
                 'Stock': row['Stock'],
-                'return': row['Semi-Annual Return'],
-                'risk': row['Semi-Annual Risk'],
+                'return': annual_return,
+                'risk': annual_risk,
                 'sharpe': row['Sharpe Ratio'],
                 'min_buy': row['Min Buy In (RM)']
             })
@@ -102,8 +106,8 @@ def save_portfolio_snapshot(allocation_details, invested, path):
         print(f"Error saving portfolio snapshot: {e}")
 
 
-def calculate_semi_annual_return(snapshot_path, latest_price_file):
-    # Calculate current portfolio value and semi-annual return.
+def calculate_annual_return(snapshot_path, latest_price_file):
+    # Calculate current portfolio value and convert the semi-annual growth to annual return.
     try:
         if not os.path.exists(snapshot_path):
             raise FileNotFoundError(f"Snapshot file not found: {snapshot_path}")
@@ -135,12 +139,12 @@ def calculate_semi_annual_return(snapshot_path, latest_price_file):
             if price is not None:
                 grew_capital += units * price
 
-        # Semi-annual return expressed as percentage growth over the invested capital.
         semi_annual_return = (grew_capital - invested) / invested if invested else 0.0
-        return grew_capital, semi_annual_return
+        annual_return = (1 + semi_annual_return) ** 2 - 1
+        return grew_capital, annual_return
 
     except Exception as e:
-        print(f"Error calculating semi-annual return: {e}")
+        print(f"Error calculating annual return: {e}")
         return 0.0, 0.0
 
 def recompute_metrics(allocation_details, invested, stocks_df, snapshot_path=None, latest_price_file=None):
@@ -152,7 +156,7 @@ def recompute_metrics(allocation_details, invested, stocks_df, snapshot_path=Non
 
     names = stocks_df['Stock'].tolist()
 
-    # Prepare weight vector based on actual invested amounts.  
+    # Prepare weight vector based on actual invested amounts. 
     # Each weight is the fraction of total invested capital allocated to that stock.
     weights = []
     for name in names:
@@ -172,14 +176,14 @@ def recompute_metrics(allocation_details, invested, stocks_df, snapshot_path=Non
     w_vec = np.array(weights)
     port_risk = float(np.sqrt(w_vec.T @ cov_matrix @ w_vec))
 
-    # Optionally compute current portfolio value and realized semi‑annual return
+    # Optionally compute current portfolio value and realized annual return
     # if a snapshot and latest prices are provided.
     grew_capital = 0.0
-    semi_annual_return = 0.0
+    annual_return = 0.0
     if snapshot_path and latest_price_file:
-        grew_capital, semi_annual_return = calculate_semi_annual_return(snapshot_path, latest_price_file)
+        grew_capital, annual_return = calculate_annual_return(snapshot_path, latest_price_file)
 
-    return port_risk, grew_capital, semi_annual_return, allocation_details
+    return port_risk, grew_capital, annual_return, allocation_details
 
 def filter_stocks(stocks):
     # Filter stocks based on Sharpe ratio and minimum return

@@ -57,7 +57,7 @@
                                 <tr>
                                     <th>Uninvested
                                         <i class="bi bi-question-circle-fill ms-1 text-info" data-bs-toggle="tooltip" data-bs-placement="right"
-                                            title="All uninvested capital will be invested in the Maybank fixed deposit at {{ (fd_rate * 100)|number_format(2) }}% p.a." style="cursor: pointer;"></i>
+                                            title="Only uninvested capital above RM500 will be invested in the Maybank fixed deposit at {{ (fd_rate * 100)|number_format(2) }}% p.a." style="cursor: pointer;"></i>
                                     </th>
                                     <th class="text-end">
                                         {{ (leftover / capital * 100)|number_format(2) }}%
@@ -90,8 +90,8 @@
                     </div>
                     <div class="row mb-3 text-center">
                         <div class="col-12 col-lg-6 mb-3 mb-md-0">
-                            <h5 class="card-title">Semi-Annual Return</h5>
-                            <p id="semi-annual-return" class="text-success fs-3">{{ (semi_annual_return * 100)|number_format(2) }}%</p>
+                            <h5 class="card-title">Annual Return</h5>
+                            <p id="annual-return" class="text-success fs-3">{{ (annual_return * 100)|number_format(2) }}%</p>
                             <p class="text-muted">Growth over total capital</p>
                         </div>
                         <div class="col-12 col-lg-6">
@@ -99,7 +99,7 @@
                             <p class="text-warning fs-3">
                                 {{ ((portfolio_risk | default(0)) * 100)|number_format(2) }}%
                             </p>
-                            <p class="text-muted">Semi-annual risk (σ)</p>
+                            <p class="text-muted">Annual risk (σ)</p>
                         </div>
                     </div>
                     <hr>
