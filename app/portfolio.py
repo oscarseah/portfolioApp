@@ -165,7 +165,7 @@ def recompute_metrics(allocation_details, invested, stocks_df, snapshot_path=Non
         weights.append(w)
         if detail is not None:
             # Update allocation to reflect actual weight achieved after rounding to board-lot multiples.
-            detail['allocation'] = f"{w*100:.1f}%"
+            detail['allocation'] = f"{w*100:.2f}%"
 
     # Risk is derived from historical data
     # the covariance matrix built from individual stock risks and an assumed constant correlation.
@@ -327,7 +327,7 @@ def refine_efficient_frontier(efficient_portfolios, stocks_df, learning_rate=0.0
                 weights = new_w
                 prev_risk = curr_risk
 
-            allocs = {name: f"{w*100:.1f}%" for name, w in zip(stock_names, weights)}
+            allocs = {name: f"{w*100:.2f}%" for name, w in zip(stock_names, weights)}
             refined_portfolios.append({
                 'return': weights @ expected_returns,
                 'risk': curr_risk,
@@ -393,7 +393,7 @@ def calculate_steepest_descent(stocks_df, learning_rate=0.01, max_iter=1000, tol
             prev_risk = current_risk
     
         # Return optimized portfolio
-        allocations = {name: f"{w*100:.1f}%" for name, w in zip(stock_names, weights)}
+        allocations = {name: f"{w*100:.2f}%" for name, w in zip(stock_names, weights)}
         return [{
             'return': np.dot(weights, expected_returns),
             'risk': current_risk,
