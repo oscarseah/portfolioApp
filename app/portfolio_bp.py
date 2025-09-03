@@ -158,12 +158,15 @@ def process_optimization():
         )
 
         # Individual stocks as scatter points with hover showing stock name
+        # Show only stocks that were actually purchased (after board-lot rounding)
+        included_names = [d['stock'] for d in allocation_details]
+        included_df = stocks_df[stocks_df['Stock'].isin(included_names)]
         stock_trace = go.Scatter(
-            x=stocks_df['risk'],
-            y=stocks_df['return'],
+            x=included_df['risk'],
+            y=included_df['return'],
             mode='markers',
-            name='Individual Stocks',
-            text=stocks_df['Stock'],
+            name='Portfolio Stocks',
+            text=included_df['Stock'],
             hovertemplate='%{text}<extra></extra>',
             marker=dict(size=8, color='gray')
         )
@@ -191,7 +194,7 @@ def process_optimization():
         fig.update_layout(
             xaxis_title='Risk (Annual)',
             yaxis_title='Return (Annual)',
-            title=f'Portfolio Optimization - {strategy.capitalize()} Strategy',
+            title=f'Strategy Allocation Results',
             template='plotly_white',
             legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"),
             hoverlabel=dict(bgcolor="white"),
