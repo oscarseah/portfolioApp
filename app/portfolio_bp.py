@@ -177,7 +177,7 @@ def process_optimization():
             mode='markers',
             name='Selected Portfolio',
             marker=dict(color='red', size=12),
-            hoverinfo='skip'
+            hovertemplate='Selected Portfolio<extra></extra>',
         )
 
         steepest_trace = go.Scatter(
@@ -186,7 +186,7 @@ def process_optimization():
             mode='markers',
             name='Min Risk (Steepest Descent)',
             marker=dict(color='green', size=15, symbol='star'),
-            hoverinfo='skip'
+            hovertemplate='Min Risk (Steepest Descent)<extra></extra>',
         )
 
         fig = go.Figure(data=[frontier_trace, stock_trace,
